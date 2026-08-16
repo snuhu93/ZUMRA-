@@ -1,0 +1,74 @@
+name: Build ZUMRA AAB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check ZIP file
+        run: |
+          echo "=== Checking ZUMRA ZIP ==="
+          ls -lh
+          test -f "ZUMRA-AAB-Ready.zip"
+
+      - name: Extract ZUMRA project
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q "ZUMRA-AAB-Ready.zip" -d project
+
+          echo "=== Extracted project ==="
+          find project -maxdepth 3 -type f | sort | head -200
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Locate Android project
+        run: |
+          PROJECT_DIR="project/ZUMRA-Android-PlayStore-Ready"
+
+          if [ ! -f "$PROJECT_DIR/gradlew" ]; then
+            echo "ERROR: gradlew was not found."
+            echo "Searching for gradlew:"
+            find project -name gradlew -type f -print
+            exit 1
+          fi
+
+          echo "Android project found at:"
+          echo "$PROJECT_DIR"
+
+      - name: Build Release AAB
+        run: |
+          cd project/ZUMRA-Android-PlayStore-Ready
+
+          chmod +x gradlew
+
+          echo "=== Gradle version ==="
+          ./gradlew --version
+
+          echo "=== Building Release AAB ==="
+          ./gradlew bundleRelease --stacktrace
+
+      - name: Find generated AAB
+        run: |
+          echo "=== Generated AAB files ==="
+          find project/ZUMRA-Android-PlayStore-Ready \
+            -type f \
+            -path "*/build/outputs/bundle/*/*.aab" \
+            -print
+
+      - name: Upload ZUMRA AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZUMRA-AAB
+          path: project/ZUMRA-Android-PlayStore-Ready/**/build/outputs/bundle/**/*.aab
+          if-no-files-found: error
