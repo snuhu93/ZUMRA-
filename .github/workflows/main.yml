@@ -1,4 +1,3 @@
-
 name: Build ZUMRA AAB
 
 on:
@@ -14,9 +13,8 @@ jobs:
 
       - name: Check ZIP file
         run: |
-          echo "=== Checking ZUMRA ZIP ==="
-          ls -lh
           test -f "ZUMRA-AAB-Ready.zip"
+          echo "ZIP found."
 
       - name: Extract ZUMRA project
         run: |
@@ -24,7 +22,7 @@ jobs:
           mkdir -p project
           unzip -q "ZUMRA-AAB-Ready.zip" -d project
 
-          echo "=== Extracted project ==="
+          echo "=== Project files ==="
           find project -maxdepth 5 -type f | sort | head -300
 
       - name: Setup Java
@@ -35,11 +33,11 @@ jobs:
 
       - name: Locate Android project
         run: |
-          PROJECT_DIR="$(dirname "$(find project -type f -name gradlew -print -quit)")"
+          PROJECT_DIR="$(dirname "$(find project -type f -name build.gradle -print -quit)")"
 
-          if [ -z "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/gradlew" ]; then
-            echo "ERROR: gradlew was not found anywhere inside project/"
-            find project -maxdepth 6 -type f | sort | head -500
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: build.gradle was not found."
+            find project -maxdepth 6 -type f | sort
             exit 1
           fi
 
@@ -48,22 +46,26 @@ jobs:
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
       - name: Build Release AAB
         run: |
           cd "$PROJECT_DIR"
 
-          chmod +x gradlew
-
           echo "=== Gradle version ==="
-          ./gradlew --version
+          gradle --version
 
           echo "=== Building Release AAB ==="
-          ./gradlew bundleRelease --stacktrace
+          gradle bundleRelease --stacktrace
 
       - name: Find generated AAB
         run: |
           echo "=== Generated AAB files ==="
-          find "$PROJECT_DIR" -type f \
+          find "$PROJECT_DIR" \
+            -type f \
             -path "*/build/outputs/bundle/*/*.aab" \
             -print
 
