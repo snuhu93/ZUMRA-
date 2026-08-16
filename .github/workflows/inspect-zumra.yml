@@ -1,0 +1,71 @@
+name: Inspect ZUMRA ZIP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check ZUMRA ZIP
+        run: |
+          echo "=== Repository files ==="
+          ls -lah
+
+          if [ ! -f "ZUMRA-AAB-Ready.zip" ]; then
+            echo "ERROR: ZUMRA-AAB-Ready.zip was not found!"
+            exit 1
+          fi
+
+          echo "ZUMRA-AAB-Ready.zip found."
+
+      - name: Extract ZUMRA ZIP
+        run: |
+          rm -rf inspect
+          mkdir inspect
+          unzip -q "ZUMRA-AAB-Ready.zip" -d inspect
+
+          echo "=== ZIP CONTENTS ==="
+          find inspect -type f | sort
+
+      - name: Inspect Android project
+        run: |
+          echo "=== Gradle files ==="
+          find inspect \( \
+            -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \
+            -o -name "gradlew" \
+          \) -type f | sort
+
+          echo "=== Android manifests ==="
+          find inspect -name "AndroidManifest.xml" -type f | sort
+
+      - name: Create inspection report
+        run: |
+          echo "ZUMRA ZIP INSPECTION REPORT" > inspection-report.txt
+          echo "============================" >> inspection-report.txt
+          echo "" >> inspection-report.txt
+          echo "ZIP CONTENTS:" >> inspection-report.txt
+          find inspect -type f | sort >> inspection-report.txt
+          echo "" >> inspection-report.txt
+          echo "ANDROID/GRADLE FILES:" >> inspection-report.txt
+          find inspect \( \
+            -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \
+            -o -name "gradlew" \
+            -o -name "AndroidManifest.xml" \
+          \) -type f | sort >> inspection-report.txt
+
+      - name: Upload inspection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZUMRA-Inspection-Report
+          path: inspection-report.txt
