@@ -1,3 +1,4 @@
+
 name: Build ZUMRA AAB
 
 on:
@@ -20,11 +21,11 @@ jobs:
       - name: Extract ZUMRA project
         run: |
           rm -rf project
-          mkdir project
+          mkdir -p project
           unzip -q "ZUMRA-AAB-Ready.zip" -d project
 
           echo "=== Extracted project ==="
-          find project -maxdepth 3 -type f | sort | head -200
+          find project -maxdepth 5 -type f | sort | head -300
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -34,21 +35,22 @@ jobs:
 
       - name: Locate Android project
         run: |
-          PROJECT_DIR="project/ZUMRA-Android-PlayStore-Ready"
+          PROJECT_DIR="$(dirname "$(find project -type f -name gradlew -print -quit)")"
 
-          if [ ! -f "$PROJECT_DIR/gradlew" ]; then
-            echo "ERROR: gradlew was not found."
-            echo "Searching for gradlew:"
-            find project -name gradlew -type f -print
+          if [ -z "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/gradlew" ]; then
+            echo "ERROR: gradlew was not found anywhere inside project/"
+            find project -maxdepth 6 -type f | sort | head -500
             exit 1
           fi
 
           echo "Android project found at:"
           echo "$PROJECT_DIR"
 
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
       - name: Build Release AAB
         run: |
-          cd project/ZUMRA-Android-PlayStore-Ready
+          cd "$PROJECT_DIR"
 
           chmod +x gradlew
 
@@ -61,8 +63,7 @@ jobs:
       - name: Find generated AAB
         run: |
           echo "=== Generated AAB files ==="
-          find project/ZUMRA-Android-PlayStore-Ready \
-            -type f \
+          find "$PROJECT_DIR" -type f \
             -path "*/build/outputs/bundle/*/*.aab" \
             -print
 
@@ -70,5 +71,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ZUMRA-AAB
-          path: project/ZUMRA-Android-PlayStore-Ready/**/build/outputs/bundle/**/*.aab
+          path: project/**/build/outputs/bundle/**/*.aab
           if-no-files-found: error
