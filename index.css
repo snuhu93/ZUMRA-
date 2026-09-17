@@ -3,57 +3,40 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  overscroll-behavior: none;
+html, body, #root {
+  height: 100%;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #f8faf9;
-  color: #0a3d2e;
+  @apply bg-gray-50 text-gray-900 dark:bg-surface-dark dark:text-gray-100;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
-#root {
-  min-height: 100vh;
-  min-height: 100dvh;
+/* Skeleton loader shimmer -- lightweight, no heavy animation libraries */
+.skeleton {
+  @apply bg-gray-200 dark:bg-gray-700 rounded-md relative overflow-hidden;
 }
-
-::-webkit-scrollbar {
-  width: 0px;
-  display: none;
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  animation: shimmer 1.4s infinite;
 }
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.shimmer-bg {
-  background: linear-gradient(90deg, #f0f4f1 25%, #e2e8e4 50%, #f0f4f1 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 1.5s infinite linear;
-}
-
 @keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
+  100% { transform: translateX(100%); }
 }
 
-.safe-top {
-  padding-top: env(safe-area-inset-top, 0px);
+/* Compact tap targets sized for mobile */
+button, a {
+  -webkit-touch-callout: none;
 }
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

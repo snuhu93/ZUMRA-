@@ -1,64 +1,118 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
-import { useAuth } from './lib/auth'
-import Welcome from './screens/Welcome'
-import SignUp from './screens/SignUp'
-import AppShell from './components/AppShell'
-import Feed from './screens/Feed'
-import CreatePost from './screens/CreatePost'
-import Profile from './screens/Profile'
-import Videos from './screens/Videos'
-import Communities from './screens/Communities'
-import Messages from './screens/Messages'
-import Notifications from './screens/Notifications'
-import Search from './screens/Search'
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { SettingsProvider } from '@/contexts/SettingsContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminRoute from '@/components/AdminRoute';
+import AppLayout from '@/layouts/AppLayout';
 
-function LoadingScreen() {
+// Lazy-loaded routes -- keeps the initial JS bundle small for low-end devices.
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
+const Home = lazy(() => import('@/pages/Home'));
+const CreatePost = lazy(() => import('@/pages/CreatePost'));
+const EditPost = lazy(() => import('@/pages/EditPost'));
+const PostDetail = lazy(() => import('@/pages/PostDetail'));
+const SharePost = lazy(() => import('@/pages/SharePost'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const EditProfile = lazy(() => import('@/pages/EditProfile'));
+const Friends = lazy(() => import('@/pages/Friends'));
+const Search = lazy(() => import('@/pages/Search'));
+const Notifications = lazy(() => import('@/pages/Notifications'));
+const Messages = lazy(() => import('@/pages/Messages'));
+const Conversation = lazy(() => import('@/pages/Conversation'));
+const CreateStatus = lazy(() => import('@/pages/CreateStatus'));
+const ViewStatus = lazy(() => import('@/pages/ViewStatus'));
+const Settings = lazy(() => import('@/pages/Settings'));
+const BlockedUsers = lazy(() => import('@/pages/BlockedUsers'));
+const Report = lazy(() => import('@/pages/Report'));
+const Admin = lazy(() => import('@/pages/Admin'));
+const About = lazy(() => import('@/pages/About'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+
+function PageFallback() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-slate-50">
-      <Loader2 size={32} className="animate-spin text-brand-600" />
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-zumra-500 border-t-transparent" />
     </div>
-  )
+  );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth()
-  if (loading) return <LoadingScreen />
-  if (!session) return <Navigate to="/welcome" replace />
-  return <>{children}</>
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+  if (loading) return <PageFallback />;
+  return <>{children}</>;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth()
-  if (loading) return <LoadingScreen />
-  if (session) return <Navigate to="/feed" replace />
-  return <>{children}</>
+function Protected({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
+  );
 }
 
 export default function App() {
-  const location = useLocation()
-  const hideShellRoutes = ['/welcome', '/signup']
-  const showShell = !hideShellRoutes.some((r) => location.pathname.startsWith(r))
-
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50 shadow-xl">
-      <Routes>
-        <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
-        <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+    <BrowserRouter>
+      <AuthProvider>
+        <SettingsProvider>
+          <AuthGate>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                {/* Public / auth routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-        <Route path="/feed" element={<ProtectedRoute><AppShell><Feed /></AppShell></ProtectedRoute>} />
-        <Route path="/videos" element={<ProtectedRoute><AppShell><Videos /></AppShell></ProtectedRoute>} />
-        <Route path="/create" element={<ProtectedRoute><AppShell><CreatePost /></AppShell></ProtectedRoute>} />
-        <Route path="/communities" element={<ProtectedRoute><AppShell><Communities /></AppShell></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><AppShell><Profile /></AppShell></ProtectedRoute>} />
-        <Route path="/profile/:id" element={<ProtectedRoute><AppShell><Profile /></AppShell></ProtectedRoute>} />
-        <Route path="/messages" element={<ProtectedRoute><AppShell><Messages /></AppShell></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><AppShell><Notifications /></AppShell></ProtectedRoute>} />
-        <Route path="/search" element={<ProtectedRoute><AppShell><Search /></AppShell></ProtectedRoute>} />
+                {/* Main app -- all wrapped in AppLayout (header + bottom nav) */}
+                <Route path="/" element={<Protected><Home /></Protected>} />
+                <Route path="/create" element={<Protected><CreatePost /></Protected>} />
+                <Route path="/post/:postId" element={<Protected><PostDetail /></Protected>} />
+                <Route path="/post/:postId/edit" element={<Protected><EditPost /></Protected>} />
+                <Route path="/post/:postId/share" element={<Protected><SharePost /></Protected>} />
 
-        <Route path="*" element={<Navigate to="/feed" replace />} />
-      </Routes>
-      {showShell && null}
-    </div>
-  )
+                <Route path="/profile" element={<Protected><Profile /></Protected>} />
+                <Route path="/profile/edit" element={<Protected><EditProfile /></Protected>} />
+                <Route path="/profile/:username" element={<Protected><Profile /></Protected>} />
+
+                <Route path="/friends" element={<Protected><Friends /></Protected>} />
+                <Route path="/search" element={<Protected><Search /></Protected>} />
+                <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
+
+                <Route path="/messages" element={<Protected><Messages /></Protected>} />
+                <Route path="/messages/:conversationId" element={<Protected><Conversation /></Protected>} />
+
+                <Route path="/status/create" element={<Protected><CreateStatus /></Protected>} />
+                <Route path="/status/:authorId" element={<Protected><ViewStatus /></Protected>} />
+
+                <Route path="/settings" element={<Protected><Settings /></Protected>} />
+                <Route path="/settings/blocked" element={<Protected><BlockedUsers /></Protected>} />
+                <Route path="/report" element={<Protected><Report /></Protected>} />
+                <Route path="/about" element={<Protected><About /></Protected>} />
+
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoute>
+                        <AppLayout>
+                          <Admin />
+                        </AppLayout>
+                      </AdminRoute>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AuthGate>
+        </SettingsProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }

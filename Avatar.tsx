@@ -1,36 +1,37 @@
-import { avatarColor, initials } from '../lib/utils'
+interface AvatarProps {
+  src: string | null | undefined;
+  name: string;
+  size?: number;
+}
 
-export function Avatar({
-  name,
-  src,
-  size = 40,
-  className = '',
-}: {
-  name: string
-  src?: string | null
-  size?: number
-  className?: string
-}) {
-  const gradient = avatarColor(name || 'Z')
-  const fontSize = Math.max(12, Math.floor(size * 0.4))
+export default function Avatar({ src, name, size = 40 }: AvatarProps) {
+  const initials = name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   if (src) {
     return (
       <img
         src={src}
         alt={name}
-        className={`rounded-full object-cover shrink-0 ${className}`}
+        width={size}
+        height={size}
+        loading="lazy"
+        className="rounded-full object-cover"
         style={{ width: size, height: size }}
       />
-    )
+    );
   }
 
   return (
     <div
-      className={`rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold shrink-0 ${className}`}
-      style={{ width: size, height: size, fontSize }}
+      className="flex items-center justify-center rounded-full bg-zumra-500 font-semibold text-white"
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
-      {initials(name) || 'Z'}
+      {initials || '?'}
     </div>
-  )
+  );
 }

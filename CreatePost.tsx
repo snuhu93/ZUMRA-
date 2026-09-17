@@ -1,154 +1,150 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
-import { Avatar } from '../components/Avatar'
-import { Image as ImageIcon, Video as VideoIcon, X, Loader2, Globe } from 'lucide-react'
+import { useState, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { createPost } from '@/services/posts';
+import { uploadImage, uploadVideo } from '@/services/storage';
+import type { PrivacyLevel } from '@/types/database';
+
+interface PendingMedia {
+  file: File;
+  type: 'image' | 'video';
+  previewUrl: string;
+}
 
 export default function CreatePost() {
-  const { user, profile } = useAuth()
-  const navigate = useNavigate()
-  const [content, setContent] = useState('')
-  const [mediaUrl, setMediaUrl] = useState('')
-  const [mediaType, setMediaType] = useState<'text' | 'image' | 'video'>('text')
-  const [posting, setPosting] = useState(false)
-  const [error, setError] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const videoInputRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuth();
+  const { dataSaver, isOffline } = useSettings();
+  const navigate = useNavigate();
+  const [content, setContent] = useState('');
+  const [privacy, setPrivacy] = useState<PrivacyLevel>('public');
+  const [media, setMedia] = useState<PendingMedia[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setMediaUrl(reader.result as string)
-      setMediaType('image')
+  const handleFiles = (e: ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+    const files = Array.from(e.target.files ?? []);
+    if (type === 'image' && media.filter((m) => m.type === 'image').length + files.length > 6) {
+      setError('You can attach up to 6 images per post.');
+      return;
     }
-    reader.readAsDataURL(file)
-  }
+    const next = files.map((file) => ({ file, type, previewUrl: URL.createObjectURL(file) }));
+    setMedia((prev) => [...prev, ...next]);
+    e.target.value = '';
+  };
 
-  function handleVideoPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setMediaUrl(reader.result as string)
-      setMediaType('video')
+  const removeMedia = (index: number) => {
+    setMedia((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    if (!content.trim() && media.length === 0) {
+      setError('Write something or add a photo/video.');
+      return;
     }
-    reader.readAsDataURL(file)
-  }
-
-  function removeMedia() {
-    setMediaUrl('')
-    setMediaType('text')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-    if (videoInputRef.current) videoInputRef.current.value = ''
-  }
-
-  async function handlePost() {
-    if (!user) {
-      setError('You must be signed in to create a post.')
-      return
+    if (isOffline) {
+      setError("You're offline. Waiting for connection...");
+      return;
     }
-    if (!content.trim() && !mediaUrl) return
-
-    setPosting(true)
-    setError('')
-
-    const { error } = await supabase.from('posts').insert({
-      user_id: user.id,
-      content: content.trim(),
-      media_url: mediaUrl || null,
-      media_type: mediaUrl ? mediaType : 'text',
-    })
-
-    if (error) {
-      console.error('Failed to create post:', error)
-      setError(error.message || 'Could not create the post. Please try again.')
-      setPosting(false)
-      return
+    setError(null);
+    setUploading(true);
+    try {
+      const uploaded: { path: string; type: 'image' | 'video' }[] = [];
+      for (let i = 0; i < media.length; i++) {
+        const m = media[i];
+        setProgress(`Uploading ${i + 1} of ${media.length}...`);
+        if (m.type === 'image') {
+          const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
+          uploaded.push({ path, type: 'image' });
+        } else {
+          const { path } = await uploadVideo({ file: m.file, userId: user.id, dataSaver });
+          uploaded.push({ path, type: 'video' });
+        }
+      }
+      setProgress('Saving post...');
+      const postId = await createPost({
+        authorId: user.id,
+        content: content.trim(),
+        privacy,
+        media: uploaded.map((u) => ({ path: u.path, type: u.type }))
+      });
+      navigate(`/post/${postId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setUploading(false);
+      setProgress('');
     }
-
-    navigate('/feed', { replace: true })
-  }
+  };
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-140px)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <button onClick={() => navigate('/feed')} className="text-sm font-medium text-slate-500">
-          Cancel
-        </button>
-        <h2 className="font-display font-semibold text-slate-800">New Post</h2>
-        <button
-          onClick={handlePost}
-          disabled={posting || (!content.trim() && !mediaUrl)}
-          className="rounded-full bg-brand-600 px-5 py-1.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
-        >
-          {posting ? <Loader2 size={14} className="animate-spin" /> : 'Post'}
-        </button>
-      </div>
+    <div className="p-4">
+      <h1 className="mb-4 text-lg font-bold">Create Post</h1>
+      {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">{error}</p>}
 
-      {/* Content area */}
-      <div className="flex-1 p-4">
-        <div className="flex gap-3">
-          <Avatar name={profile?.full_name || 'User'} src={profile?.avatar_url} size={44} />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-800">{profile?.full_name || 'User'}</p>
-            <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600">
-              <Globe size={10} /> Public
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="What's on your mind?"
+        rows={5}
+        maxLength={5000}
+        className="w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+      />
+
+      {media.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {media.map((m, i) => (
+            <div key={i} className="relative">
+              {m.type === 'image' ? (
+                <img src={m.previewUrl} alt="" className="h-24 w-full rounded-lg object-cover" />
+              ) : (
+                <video src={m.previewUrl} className="h-24 w-full rounded-lg object-cover" muted />
+              )}
+              <button
+                onClick={() => removeMedia(i)}
+                className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white"
+                aria-label="Remove"
+              >
+                ✕
+              </button>
             </div>
-          </div>
+          ))}
         </div>
+      )}
 
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="What's on your mind?"
-          rows={5}
-          className="mt-4 w-full resize-none bg-transparent text-base text-slate-800 outline-none placeholder:text-slate-400"
-          autoFocus
-        />
-
-        {/* Media preview */}
-        {mediaUrl && (
-          <div className="relative mt-3 rounded-2xl overflow-hidden ring-1 ring-slate-200 animate-scale-in">
-            {mediaType === 'image' ? (
-              <img src={mediaUrl} alt="" className="w-full max-h-80 object-cover" />
-            ) : (
-              <video src={mediaUrl} controls className="w-full max-h-80 object-cover" />
-            )}
-            <button
-              onClick={removeMedia}
-              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</div>
-        )}
+      <div className="mt-3 flex gap-3 text-sm">
+        <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
+          🖼️ Photo
+          <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e, 'image')} />
+        </label>
+        <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
+          🎬 Video
+          <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFiles(e, 'video')} />
+        </label>
       </div>
 
-      {/* Media buttons */}
-      <div className="border-t border-slate-100 px-4 py-3 flex items-center gap-4">
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
-        <input ref={videoInputRef} type="file" accept="video/*" onChange={handleVideoPick} className="hidden" />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 active:scale-95"
+      <div className="mt-4">
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Who can see this?</label>
+        <select
+          value={privacy}
+          onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)}
+          className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
         >
-          <ImageIcon size={18} className="text-brand-500" /> Photo
-        </button>
-        <button
-          onClick={() => videoInputRef.current?.click()}
-          className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 active:scale-95"
-        >
-          <VideoIcon size={18} className="text-accent-500" /> Video
-        </button>
+          <option value="public">Public</option>
+          <option value="friends">Friends</option>
+          <option value="only_me">Only Me</option>
+        </select>
       </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={uploading}
+        className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
+      >
+        {uploading ? progress || 'Uploading...' : 'Post'}
+      </button>
     </div>
-  )
+  );
 }
