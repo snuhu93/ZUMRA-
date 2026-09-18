@@ -14,7 +14,7 @@ export async function uploadImage(params: {
   file: File;
   userId: string;
   bucket: Extract<Bucket, 'avatars' | 'covers' | 'post-images'>;
-  kind: 'avatar' | 'cover' | 'post';
+  kind: 'avatar' | 'cover' | 'post' | 'status';
   dataSaver: boolean;
 }): Promise<{ path: string; publicUrl: string }> {
   const compressed = await compressImage(params.file, { kind: params.kind, dataSaver: params.dataSaver });
@@ -72,4 +72,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-}
+    }
