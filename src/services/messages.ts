@@ -132,7 +132,7 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
       onInsert(payload.new);
     })
     .subscribe();
-  eturn () => {
+  return () => {
     supabase.removeChannel(channel);
   };
                                         }
