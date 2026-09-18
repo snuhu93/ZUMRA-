@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabaseClient';
 
 export interface ConversationSummary {
@@ -131,5 +132,4 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
       onInsert(payload.new);
     })
     .subscribe();
-  return () => supabase.removeChannel(channel);
-}
+  r
