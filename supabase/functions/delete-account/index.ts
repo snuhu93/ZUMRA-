@@ -1,0 +1,99 @@
+// supabase/functions/delete-account/index.ts
+//
+// Deploy with:
+//   supabase functions deploy delete-account
+//
+// This function is the ONLY place the service-role key is used. It:
+//   1. Verifies the caller's own JWT (the anon key + user's access token),
+//      so a user can only ever delete their OWN account.
+//   2. Uses the service-role key to remove the user's storage files and then
+//      permanently delete the auth user, which cascades to `profiles` and
+//      every row that references it (posts, comments, messages, etc. --
+//      see `on delete cascade` in the SQL migrations).
+//
+// SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are
+// auto-injected into every Edge Function's environment by Supabase -- you do
+// NOT need to run `supabase secrets set` for these three. Only custom
+// secrets (if you add any later) need to be set that way.
+//
+// The frontend calls this via `supabase.functions.invoke('delete-account')`
+// with the user's normal session -- it never sees or holds the service key.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Step 1: verify who is calling, using their own token against the anon client.
+    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const {
+      data: { user },
+      error: userError
+    } = await callerClient.auth.getUser();
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Step 2: perform the deletion with the service-role client (elevated privileges,
+    // server-side only -- this key must NEVER be sent to any browser).
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Remove the user's own storage objects first (best-effort; ignore individual failures
+    // so one missing file doesn't block account deletion).
+    const buckets = ['avatars', 'covers', 'post-images', 'post-videos'];
+    for (const bucket of buckets) {
+      const { data: files } = await adminClient.storage.from(bucket).list(user.id, { limit: 1000 });
+      if (files?.length) {
+        const paths = files.map((f) => `${user.id}/${f.name}`);
+        await adminClient.storage.from(bucket).remove(paths);
+      }
+    }
+
+    // Deleting the auth user cascades to `profiles` (on delete cascade), and from
+    // there to posts, comments, likes, friends, followers, messages, notifications,
+    // statuses, and reports via their own foreign keys back to profiles/posts.
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
+    if (deleteError) {
+      return new Response(JSON.stringify({ error: deleteError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
