@@ -38,7 +38,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-zumra-500' : 'bg-gray-300 dark:bg-gray-700'}`}
       aria-pressed={checked}
     >
-      <span className={`block h-5 w-5 translate-x-0.5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`} />
+      <span className={`block h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
   );
 }
