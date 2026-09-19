@@ -14,8 +14,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Row({ label, onClick, right }: { label: string; onClick?: () => void; right?: React.ReactNode }) {
+  const cls = 'flex w-full items-center justify-between px-4 py-3 text-left text-sm';
+  if (!onClick) {
+    return (
+      <div className={cls}>
+        <span>{label}</span>
+        {right}
+      </div>
+    );
+  }
   return (
-    <button onClick={onClick} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm" disabled={!onClick}>
+    <button onClick={onClick} className={cls}>
       <span>{label}</span>
       {right}
     </button>
