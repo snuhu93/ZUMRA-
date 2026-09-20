@@ -40,7 +40,7 @@ export async function uploadVideo(params: {
     throw new Error(
       params.dataSaver
         ? 'Video is too large for Data Saver mode (max 25MB). Turn off Data Saver or choose a shorter clip.'
-        : 'Video is too large. Please choose a file under 100MB.'
+        : 'Video is too large. Please choose a file under 50MB.'
     );
   }
   const path = buildPath(params.userId, params.file.name);
