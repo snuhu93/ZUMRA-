@@ -40,7 +40,7 @@ export async function compressImage(file: File, options: CompressOptions): Promi
 }
 
 export function isVideoTooLarge(file: File, dataSaver: boolean): boolean {
-  const limitMB = dataSaver ? 25 : 50;
+  const limitMB = dataSaver ? 25 : 100;
   return file.size / (1024 * 1024) > limitMB;
 }
 
