@@ -74,7 +74,7 @@ export default function Settings() {
     // Calls the delete-account Edge Function, which uses the service-role key
     // server-side (never exposed here) to permanently remove the account and
     // its storage files. See supabase/functions/delete-account/index.ts.
-    const { error } = await supabase.functions.invoke('delete-account');
+    const { error } = await supabase.functions.invoke('super-processor');
     setDeleting(false);
     if (error) {
       setMessage('Something went wrong deleting your account. Please try again.');
