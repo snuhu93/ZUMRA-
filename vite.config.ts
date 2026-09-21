@@ -31,6 +31,13 @@ export default defineConfig({
       },
       workbox: {
         runtimeCaching: [
+          // Bidiyo: bar shi ya tafi kai tsaye ta network, kar service worker ta taba shi
+          // (bidiyo yana bukatar "range requests" wanda CacheFirst ba ta goyon baya sosai)
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*\.(mp4|webm|mov|m4v)$/,
+            handler: 'NetworkOnly'
+          },
+          // Sauran media (hotuna, audio, da sauransu): CacheFirst kamar yadda yake
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/,
             handler: 'CacheFirst',
