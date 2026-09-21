@@ -23,11 +23,11 @@ export default function About() {
 
       <h2 id="help" className="mb-2 mt-6 text-base font-semibold">Help</h2>
       <p className="text-gray-600 dark:text-gray-400">
-        Need help? Reach out to your ZUMRA administrator, or check the Settings screen for account,
+        Need help? Contact us at zumra.app.support@gmail.com, or check the Settings screen for account, privacy, and data options., or check the Settings screen for account,
         privacy, and data options.
       </p>
 
-      <p className="mt-8 text-center text-xs text-gray-400">S-NUHU GRAPHICS & AI VIDEOS</p>
+      <p className="mt-8 text-center text-xs text-gray-400">Contact: zumra.app.support@gmail.com</p>
     </div>
   );
 }
