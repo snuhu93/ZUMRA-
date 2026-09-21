@@ -122,13 +122,21 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
               ) : (
                 <div key={m.id} className="relative overflow-hidden rounded-lg bg-black">
                   {playingVideoId === m.id ? (
-                    <video src={getPublicUrl('post-videos', m.storage_path) ?? ''} controls autoPlay muted={false} className="max-h-96 w-full" />
+                    <video src={getPublicUrl('post-videos', m.storage_path) ?? ''} controls autoPlay playsInline muted={false}  className="max-h-96 w-full" />
                   ) : (
                     <button
                       onClick={() => setPlayingVideoId(m.id)}
                       className="relative flex h-56 w-full items-center justify-center bg-gray-800"
                       aria-label="Play video"
-                    >
+                    >{!m.thumbnail_path && !dataSaver && (
+  <video
+    src={`${getPublicUrl('post-videos', m.storage_path) ?? ''}#t=0.1`}
+    preload="metadata"
+    muted
+    playsInline
+    className="absolute inset-0 h-full w-full object-cover"
+  />
+)}
                       {m.thumbnail_path && (
                         <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
                       )}
