@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import { compressImage, isVideoTooLarge } from '@/utils/mediaOptimization';
+import { compressImage, compressVideo, isVideoTooLarge } from '@/utils/mediaOptimization';
 
 type Bucket = 'avatars' | 'covers' | 'post-images' | 'post-videos' | 'message-media';
 
@@ -34,25 +34,31 @@ export async function uploadImage(params: {
 export async function uploadVideo(params: {
   file: File;
   userId: string;
-  dataSaver: boolean;
+  dataSaver: boolean;onProgress?: (percent: number) => void;
 }): Promise<{ path: string; publicUrl: string }> {
-  if (isVideoTooLarge(params.file, params.dataSaver)) {
+  if (params.file.size / (1024 * 1024) > 150) {
+    throw new Error('Video is too large. Please choose a file under 150MB.');
+  }
+  const file = await compressVideo(params.file, {
+    dataSaver: params.dataSaver,
+    onProgress: params.onProgress,
+  });if (isVideoTooLarge(file, params.dataSaver)) {
     throw new Error(
       params.dataSaver
         ? 'Video is too large for Data Saver mode (max 25MB). Turn off Data Saver or choose a shorter clip.'
         : 'Video is too large. Please choose a file under 50MB.'
     );
   }
-  const path = buildPath(params.userId, params.file.name);
-  const { error } = await supabase.storage.from('post-videos').upload(path, params.file, {
+  const path = buildPath(params.userId, file.name);
+  const { error } = await supabase.storage.from('post-videos').upload(path, file, {
     cacheControl: '31536000',
     upsert: false,
-    contentType: params.file.type || 'video/mp4'
+    contentType: file.type || 'video/mp4'
   });
   if (error) throw error;
   const { data } = supabase.storage.from('post-videos').getPublicUrl(path);
   return { path, publicUrl: data.publicUrl };
-}
+          }
 
 export async function uploadMessageMedia(params: { file: File; userId: string; conversationId: string; dataSaver: boolean }) {
   const isImage = params.file.type.startsWith('image/');
