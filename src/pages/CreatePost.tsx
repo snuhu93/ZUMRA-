@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { createPost } from '@/services/posts';
-import { uploadImage, uploadVideo } from '@/services/storage';
+import { uploadImage, uploadVideo, generateVideoThumbnail } from '@/services/storage';
 import type { PrivacyLevel } from '@/types/database';
 
 interface PendingMedia {
@@ -51,7 +51,7 @@ export default function CreatePost() {
     setError(null);
     setUploading(true);
     try {
-      const uploaded: { path: string; type: 'image' | 'video' }[] = [];
+      const uploaded: { path: string; type: 'image' | 'video'; thumbnailPath?: string }[] = [];
       for (let i = 0; i < media.length; i++) {
         const m = media[i];
         setProgress(`Uploading ${i + 1} of ${media.length}...`);
@@ -60,7 +60,21 @@ export default function CreatePost() {
           uploaded.push({ path, type: 'image' });
         } else {
           const { path } = await uploadVideo({ file: m.file, userId: user.id, dataSaver });
-          uploaded.push({ path, type: 'video' });
+          let thumbnailPath: string | undefined;
+          try {
+            const thumbFile = await generateVideoThumbnail(m.file);
+            const { path: thumbPath } = await uploadImage({
+              file: thumbFile,
+              userId: user.id,
+              bucket: 'post-images',
+              kind: 'post',
+              dataSaver,
+            });
+            thumbnailPath = thumbPath;
+          } catch {
+            // If thumbnail generation fails, continue without it
+          }
+          uploaded.push({ path, type: 'video', thumbnailPath });
         }
       }
       setProgress('Saving post...');
@@ -68,7 +82,7 @@ export default function CreatePost() {
         authorId: user.id,
         content: content.trim(),
         privacy,
-        media: uploaded.map((u) => ({ path: u.path, type: u.type }))
+        media: uploaded.map((u) => ({ path: u.path, type: u.type, thumbnailPath: u.thumbnailPath })),
       });
       navigate(`/post/${postId}`);
     } catch (err) {
@@ -107,7 +121,7 @@ export default function CreatePost() {
                 className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white"
                 aria-label="Remove"
               >
-                ✕
+                ×
               </button>
             </div>
           ))}
@@ -147,4 +161,4 @@ export default function CreatePost() {
       </button>
     </div>
   );
-}
+    }
