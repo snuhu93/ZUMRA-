@@ -14,7 +14,7 @@ const PRESETS: Record<CompressOptions['kind'], { maxSizeMB: number; maxWidthOrHe
   avatar: { maxSizeMB: 0.15, maxWidthOrHeight: 480 },
   cover: { maxSizeMB: 0.35, maxWidthOrHeight: 1280 },
   post: { maxSizeMB: 0.5, maxWidthOrHeight: 1600 },
-  status: { maxSizeMB: 0.3, maxWidthOrHeight: 1080 }
+  status: { maxSizeMB: 0.3, maxWidthOrHeight: 1080 },
 };
 
 export async function compressImage(file: File, options: CompressOptions): Promise<File> {
@@ -100,7 +100,7 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
 
     const stream = canvas.captureStream(30);
 
-    // Sauti: ana daukar ta ba tare da an kunna ta a lasifika ba
+    // Sauti: ana daukar ta da tare da a kunna ta a lasifika ba
     let audioCtx: AudioContext | null = null;
     try {
       audioCtx = new AudioContext();
@@ -114,7 +114,6 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
     }
 
     const mimeType = [
-      'video/mp4;codecs=avc1,mp4a.40.2',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
       'video/webm',
