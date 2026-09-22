@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +29,17 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+
+  const playFullscreen = (id: string) => {
+    setPlayingVideoId(id);
+    setTimeout(() => {
+      const el = videoRefs.current[id];
+      if (!el) return;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if ((el as any).webkitEnterFullscreen) (el as any).webkitEnterFullscreen();
+    }, 100);
+  };
 
   const isOwner = user?.id === post.author_id;
 
@@ -122,21 +133,30 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
               ) : (
                 <div key={m.id} className="relative overflow-hidden rounded-lg bg-black">
                   {playingVideoId === m.id ? (
-                    <video src={getPublicUrl('post-videos', m.storage_path) ?? ''} controls autoPlay playsInline muted={false}  className="max-h-96 w-full" />
+                    <video
+                      ref={(el) => { videoRefs.current[m.id] = el; }}
+                      src={getPublicUrl('post-videos', m.storage_path) ?? ''}
+                      controls
+                      autoPlay
+                      playsInline
+                      muted={false}
+                      className="max-h-96 w-full"
+                    />
                   ) : (
                     <button
-                      onClick={() => setPlayingVideoId(m.id)}
+                      onClick={() => playFullscreen(m.id)}
                       className="relative flex h-56 w-full items-center justify-center bg-gray-800"
                       aria-label="Play video"
-                    >{!m.thumbnail_path && !dataSaver && (
-  <video
-    src={`${getPublicUrl('post-videos', m.storage_path) ?? ''}#t=0.1`}
-    preload="metadata"
-    muted
-    playsInline
-    className="absolute inset-0 h-full w-full object-cover"
-  />
-)}
+                    >
+                      {!m.thumbnail_path && !dataSaver && (
+                        <video
+                          src={`${getPublicUrl('post-videos', m.storage_path) ?? ''}#t=0.1`}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      )}
                       {m.thumbnail_path && (
                         <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
                       )}
