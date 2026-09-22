@@ -59,7 +59,45 @@ export async function uploadVideo(params: {
   const { data } = supabase.storage.from('post-videos').getPublicUrl(path);
   return { path, publicUrl: data.publicUrl };
           }
+export function generateVideoThumbnail(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.src = URL.createObjectURL(file);
 
+    video.onloadeddata = () => {
+      video.currentTime = Math.min(0.1, video.duration / 2);
+    };
+
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(video.src);
+        reject(new Error('Could not create canvas context'));
+        return;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(video.src);
+        if (!blob) {
+          reject(new Error('Could not generate thumbnail'));
+          return;
+        }
+        resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.8);
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Could not load video for thumbnail'));
+    };
+  });
+                         }
 export async function uploadMessageMedia(params: { file: File; userId: string; conversationId: string; dataSaver: boolean }) {
   const isImage = params.file.type.startsWith('image/');
   const path = `${params.conversationId}/${params.userId}/${Date.now()}-${params.file.name}`;
@@ -78,4 +116,5 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-    }
+  }
+    
