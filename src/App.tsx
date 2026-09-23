@@ -12,6 +12,7 @@ const Register = lazy(() => import('@/pages/Register'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Home = lazy(() => import('@/pages/Home'));
+const Reels = lazy(() => import('@/pages/Reels'));
 const CreatePost = lazy(() => import('@/pages/CreatePost'));
 const EditPost = lazy(() => import('@/pages/EditPost'));
 const PostDetail = lazy(() => import('@/pages/PostDetail'));
@@ -70,6 +71,7 @@ export default function App() {
 
                 {/* Main app -- all wrapped in AppLayout (header + bottom nav) */}
                 <Route path="/" element={<Protected><Home /></Protected>} />
+                <Route path="/reels" element={<Protected><Reels /></Protected>} />
                 <Route path="/create" element={<Protected><CreatePost /></Protected>} />
                 <Route path="/post/:postId" element={<Protected><PostDetail /></Protected>} />
                 <Route path="/post/:postId/edit" element={<Protected><EditPost /></Protected>} />
@@ -115,4 +117,4 @@ export default function App() {
       </AuthProvider>
     </BrowserRouter>
   );
-}
+  }
