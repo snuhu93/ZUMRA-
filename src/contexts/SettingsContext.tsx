@@ -5,6 +5,8 @@ type ThemeMode = 'light' | 'dark' | 'system';
 interface SettingsContextValue {
   dataSaver: boolean;
   setDataSaver: (v: boolean) => void;
+  autoplayVideos: boolean;
+  setAutoplayVideos: (v: boolean) => void;
   theme: ThemeMode;
   setTheme: (t: ThemeMode) => void;
   isOffline: boolean;
@@ -16,6 +18,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [dataSaver, setDataSaverState] = useState<boolean>(() => {
     const stored = localStorage.getItem('zumra_data_saver');
     return stored === null ? true : stored === 'true'; // ON by default for new users
+  });
+  const [autoplayVideos, setAutoplayVideosState] = useState<boolean>(() => {
+    const stored = localStorage.getItem('zumra_autoplay_videos');
+    return stored === null ? false : stored === 'true'; // OFF by default
   });
   const [theme, setThemeState] = useState<ThemeMode>(() => (localStorage.getItem('zumra_theme') as ThemeMode) || 'system');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -48,13 +54,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setDataSaverState(v);
     localStorage.setItem('zumra_data_saver', String(v));
   };
+  const setAutoplayVideos = (v: boolean) => {
+    setAutoplayVideosState(v);
+    localStorage.setItem('zumra_autoplay_videos', String(v));
+  };
   const setTheme = (t: ThemeMode) => {
     setThemeState(t);
     localStorage.setItem('zumra_theme', t);
   };
 
   return (
-    <SettingsContext.Provider value={{ dataSaver, setDataSaver, theme, setTheme, isOffline }}>
+    <SettingsContext.Provider value={{ dataSaver, setDataSaver, autoplayVideos, setAutoplayVideos, theme, setTheme, isOffline }}>
       {children}
     </SettingsContext.Provider>
   );
@@ -64,4 +74,4 @@ export function useSettings() {
   const ctx = useContext(SettingsContext);
   if (!ctx) throw new Error('useSettings must be used within SettingsProvider');
   return ctx;
-}
+  }
