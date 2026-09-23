@@ -108,7 +108,13 @@ export default function Settings() {
       </Section>
 
       <Section title="Privacy">
-        <Row label="Who can see my posts" right={<span className="text-xs text-gray-400">Set per post</span>} />
+        <div className="flex w-full items-center justify-between px-4 py-3 text-sm">
+  <div>
+    <span>Who can see my posts</span>
+    <p className="mt-0.5 text-xs text-gray-400">Choose this when creating each post</p>
+  </div>
+  <span className="text-xs text-gray-400 dark:text-gray-500">Set per post</span>
+</div>
         <Row label="Who can send friend requests" right={<span className="text-xs text-gray-400">Everyone</span>} />
         <Row label="Who can message me" right={<span className="text-xs text-gray-400">Everyone</span>} />
         <Row label="Blocked Users" onClick={() => navigate('/settings/blocked')} right={<span>›</span>} />
