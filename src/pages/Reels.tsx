@@ -11,7 +11,7 @@ export default function Reels() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [muted, setMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
@@ -46,7 +46,6 @@ export default function Reels() {
           if (!video) return;
           if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
             const idx = posts.findIndex((p) => p.id === id);
-            if (idx !== -1) setActiveIndex(idx);
             video.play().catch(() => {});
             if (idx !== -1 && idx >= posts.length - 2) load();
           } else {
@@ -60,6 +59,13 @@ export default function Reels() {
     items.forEach((item) => observer.observe(item));
     return () => observer.disconnect();
   }, [posts, load]);
+
+  // Apply the mute state to every video whenever it changes.
+  useEffect(() => {
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) video.muted = muted;
+    });
+  }, [muted]);
 
   const handleLike = async (post: FeedPost) => {
     if (!user) return;
@@ -78,6 +84,14 @@ export default function Reels() {
 
   return (
     <div ref={containerRef} className="h-[calc(100vh-8rem)] w-full snap-y snap-mandatory overflow-y-scroll bg-black">
+      <button
+        onClick={() => setMuted((m) => !m)}
+        className="fixed right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-xl text-white"
+        aria-label={muted ? 'Unmute' : 'Mute'}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+
       {posts.map((post) => {
         const video = post.post_media.find((m) => m.media_type === 'video');
         if (!video) return null;
@@ -88,7 +102,7 @@ export default function Reels() {
               src={getPublicUrl('post-videos', video.storage_path) ?? ''}
               className="h-full w-full object-contain"
               loop
-              muted
+              muted={muted}
               playsInline
               onClick={(e) => {
                 const v = e.currentTarget;
@@ -122,4 +136,4 @@ export default function Reels() {
       {loading && <p className="p-4 text-center text-xs text-gray-400">Loading...</p>}
     </div>
   );
-    }
+}
