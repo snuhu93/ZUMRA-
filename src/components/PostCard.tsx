@@ -21,7 +21,7 @@ function timeAgo(iso: string): string {
 
 export default function PostCard({ post, onChanged }: { post: FeedPost; onChanged?: () => void }) {
   const { user } = useAuth();
-  const { dataSaver } = useSettings();
+  const { dataSaver, autoplayVideos } = useSettings();
   const navigate = useNavigate();
   const [liked, setLiked] = useState(!!post.liked_by_me);
   const [likeCount, setLikeCount] = useState(post.like_count);
@@ -148,14 +148,14 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
                       className="relative flex h-56 w-full items-center justify-center bg-gray-800"
                       aria-label="Play video"
                     >
-                      {!m.thumbnail_path && !dataSaver && (
+                      {!m.thumbnail_path && !dataSaver && autoplayVideos && (
                         <video
                           src={`${getPublicUrl('post-videos', m.storage_path) ?? ''}#t=0.1`}
                           preload="metadata"
                           muted
                           playsInline
                           className="absolute inset-0 h-full w-full object-cover"
-                        />
+                        
                       )}
                       {m.thumbnail_path && (
                         <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
