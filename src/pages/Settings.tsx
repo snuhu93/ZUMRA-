@@ -45,7 +45,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 export default function Settings() {
   const { user, signOut, updatePassword } = useAuth();
-  const { dataSaver, setDataSaver, theme, setTheme } = useSettings();
+  const { dataSaver, setDataSaver, autoplayVideos, setAutoplayVideos, theme, setTheme } = useSettings();
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -121,7 +121,7 @@ export default function Settings() {
       <Section title="Data">
         <Row label="Data Saver" right={<Toggle checked={dataSaver} onChange={setDataSaver} />} />
         <Row label="Media Quality" right={<span className="text-xs text-gray-400">{dataSaver ? 'Reduced' : 'High'}</span>} />
-        <Row label="Autoplay Videos" right={<span className="text-xs text-gray-400">Off (tap to play)</span>} />
+        <Row label="Autoplay Videos" right={<Toggle checked={autoplayVideos} onChange={setAutoplayVideos} />} />
       </Section>
 
       <Section title="Appearance">
