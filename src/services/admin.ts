@@ -49,4 +49,7 @@ export async function adminStats() {
   const { data, error } = await supabase.rpc('admin_platform_stats');
   if (error) throw error;
   return data?.[0] ?? { total_users: 0, total_posts: 0, total_reports_open: 0 };
-}
+}export async function adminSendAnnouncement(message: string) {
+  const { error } = await supabase.rpc('admin_send_announcement', { p_message: message });
+  if (error) throw error;
+    }
