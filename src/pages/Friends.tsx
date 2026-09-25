@@ -21,16 +21,25 @@ export default function Friends() {
   const [friends, setFriends] = useState<PublicProfileLite[]>([]);
   const [suggested, setSuggested] = useState<PublicProfileLite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [reqs, fr] = await Promise.all([fetchIncomingRequests(user.id), fetchFriends(user.id)]);
-    setRequests(reqs);
-    setFriends(fr);
-    const excludeIds = [...fr.map((f) => f.id), ...reqs.map((r: any) => r.sender.id)];
-    setSuggested(await fetchSuggestedFriends(user.id, excludeIds));
-    setLoading(false);
+    try {
+      const [reqs, fr] = await Promise.all([
+        fetchIncomingRequests(user.id),
+        fetchFriends(user.id)
+      ]);
+      setRequests(reqs);
+      setFriends(fr);
+      const excludeIds = [...fr.map((f) => f.id), ...reqs.map((r: any) => r.sender.id)];
+      setSuggested(await fetchSuggestedFriends(user.id, excludeIds));
+    } catch (err) {
+      console.error('Friends load error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -38,17 +47,43 @@ export default function Friends() {
   }, [load]);
 
   const handleAccept = async (id: string) => {
-    await acceptFriendRequest(id);
-    load();
+    try {
+      setPendingId(id);
+      await acceptFriendRequest(id);
+      load();
+    } catch (err) {
+      console.error('Accept friend error:', err);
+      alert('An kasa amincewa da buƙatar: ' + (err as Error).message);
+    } finally {
+      setPendingId(null);
+    }
   };
+
   const handleReject = async (id: string) => {
-    await rejectFriendRequest(id);
-    load();
+    try {
+      setPendingId(id);
+      await rejectFriendRequest(id);
+      load();
+    } catch (err) {
+      console.error('Reject friend error:', err);
+      alert('An kasa ƙin buƙatar: ' + (err as Error).message);
+    } finally {
+      setPendingId(null);
+    }
   };
+
   const handleAdd = async (id: string) => {
     if (!user) return;
-    await sendFriendRequest(user.id, id);
-    load();
+    try {
+      setPendingId(id);
+      await sendFriendRequest(user.id, id);
+      load();
+    } catch (err) {
+      console.error('Add friend error:', err);
+      alert('An kasa aika friend request: ' + (err as Error).message);
+    } finally {
+      setPendingId(null);
+    }
   };
 
   return (
@@ -58,18 +93,30 @@ export default function Friends() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-sm font-medium capitalize ${tab === t ? 'border-b-2 border-zumra-500 text-zumra-600' : 'text-gray-500'}`}
+            className={`flex-1 py-3 text-sm font-medium capitalize ${
+              tab === t
+                ? 'border-b-2 border-zumra-500 text-zumra-600'
+                : 'text-gray-500'
+            }`}
           >
-            {t === 'requests' ? `Requests${requests.length ? ` (${requests.length})` : ''}` : t}
+            {t === 'requests'
+              ? `Requests${requests.length ? ` (${requests.length})` : ''}`
+              : t}
           </button>
         ))}
       </div>
 
-      {loading && <p className="p-6 text-center text-sm text-gray-500">Loading...</p>}
+      {loading && (
+        <p className="p-6 text-center text-sm text-gray-500">Loading...</p>
+      )}
 
       {!loading && tab === 'requests' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {requests.length === 0 && <p className="p-10 text-center text-sm text-gray-500">You don't have any friend requests.</p>}
+          {requests.length === 0 && (
+            <p className="p-10 text-center text-sm text-gray-500">
+              You don't have any friend requests.
+            </p>
+          )}
           {requests.map((r) => (
             <div key={r.id} className="flex items-center justify-between p-4">
               <Link to={`/profile/${r.sender.username}`} className="flex items-center gap-3">
@@ -77,8 +124,20 @@ export default function Friends() {
                 <span className="text-sm font-medium">{r.sender.full_name}</span>
               </Link>
               <div className="flex gap-2">
-                <button onClick={() => handleAccept(r.id)} className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white">Accept</button>
-                <button onClick={() => handleReject(r.id)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs dark:border-gray-700">Reject</button>
+                <button
+                  disabled={pendingId === r.id}
+                  onClick={() => handleAccept(r.id)}
+                  className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {pendingId === r.id ? '...' : 'Accept'}
+                </button>
+                <button
+                  disabled={pendingId === r.id}
+                  onClick={() => handleReject(r.id)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs dark:border-gray-700 disabled:opacity-50"
+                >
+                  Reject
+                </button>
               </div>
             </div>
           ))}
@@ -87,7 +146,9 @@ export default function Friends() {
 
       {!loading && tab === 'friends' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {friends.length === 0 && <p className="p-10 text-center text-sm text-gray-500">No friends yet.</p>}
+          {friends.length === 0 && (
+            <p className="p-10 text-center text-sm text-gray-500">No friends yet.</p>
+          )}
           {friends.map((f) => (
             <Link key={f.id} to={`/profile/${f.username}`} className="flex items-center gap-3 p-4">
               <Avatar src={f.avatar_url} name={f.full_name} />
@@ -99,18 +160,26 @@ export default function Friends() {
 
       {!loading && tab === 'suggested' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {suggested.length === 0 && <p className="p-10 text-center text-sm text-gray-500">No suggestions right now.</p>}
+          {suggested.length === 0 && (
+            <p className="p-10 text-center text-sm text-gray-500">No suggestions right now.</p>
+          )}
           {suggested.map((s) => (
             <div key={s.id} className="flex items-center justify-between p-4">
               <Link to={`/profile/${s.username}`} className="flex items-center gap-3">
                 <Avatar src={s.avatar_url} name={s.full_name} />
                 <span className="text-sm font-medium">{s.full_name}</span>
               </Link>
-              <button onClick={() => handleAdd(s.id)} className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white">Add Friend</button>
+              <button
+                disabled={pendingId === s.id}
+                onClick={() => handleAdd(s.id)}
+                className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                {pendingId === s.id ? '...' : 'Add Friend'}
+              </button>
             </div>
           ))}
         </div>
       )}
     </div>
   );
-}
+    }
