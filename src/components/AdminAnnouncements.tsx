@@ -22,23 +22,23 @@ export default function AdminAnnouncements() {
   return (
     <div className="p-4">
       <p className="mb-2 text-sm text-gray-500">
-        Wannan sako zai je wa DUK users a matsayin notification.
+        This message will be sent to ALL users as a notification.
       </p>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={4}
-        placeholder="Rubuta sanarwar ku a nan..."
-        className="w-full rounded-lg border border-gray-200 bg-white p-3 text-sm dark:border-gray-800 dark:bg-gray-900"
+        placeholder="Write your announcement here..."
+        className="w-full rounded-lg border border-gray-200 bg-white p-3 text-sm"
       />
       <button
         onClick={handleSend}
         disabled={sending || !message.trim()}
-        className="mt-3 rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-3 rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white"
       >
-        {sending ? 'Ana Aikawa...' : 'Aika Sanarwa'}
+        {sending ? 'Sending...' : 'Send Announcement'}
       </button>
-      {sent && <p className="mt-2 text-xs text-green-500">An aika sanarwar cikin nasara!</p>}
+      {sent && <p className="mt-2 text-xs text-green-500">Announcement sent successfully.</p>}
     </div>
   );
-      }
+                                    }
