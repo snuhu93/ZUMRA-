@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '$/lib/supabaseClient';
 import type { Profile } from '@/types/database';
 
 interface AuthContextValue {
@@ -8,7 +8,7 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (params: { email: string; password: string; fullName: string; username: string }) => Promise<{ error: string | null }>;
+  signUp: (params: { email: string; password: string; fullName: string; username: string; phone: string }) => Promise<{ error: string | null }>;
   signIn: (params: { email: string; password: string }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
@@ -26,14 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (data) setProfile(data as unknown as Profile);
+    if (data) setProfile(data as Profile);
   };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) loadProfile(data.session.user.id);
+      if (data.session?.user.id) loadProfile(data.session.user.id);
       setLoading(false);
     });
 
@@ -50,9 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const signUp: AuthContextValue['signUp'] = async ({ email, password, fullName, username }) => {
-    // Enforce unique username before creating the auth user so we can show a
-    // clear inline error instead of a generic DB constraint failure.
+  const signUp: AuthContextValue['signUp'] = async ({ email, password, fullName, username, phone }) => {
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
@@ -63,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, username } }
+      options: { data: { full_name: fullName, username, phone } }
     });
     if (error) return { error: error.message };
     return { error: null };
@@ -108,4 +106,4 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-}
+  }
