@@ -59,8 +59,7 @@ export default function TopHeader() {
           💬
         </Link>
         <Link
-          <Link
-  to="/create"
+          to="/create"
           aria-label="Create post"
           className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
@@ -122,4 +121,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-          }
+  }
