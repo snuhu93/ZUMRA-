@@ -59,7 +59,8 @@ export default function TopHeader() {
           💬
         </Link>
         <Link
-          to="/post/create"
+          <Link
+  to="/create"
           aria-label="Create post"
           className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
