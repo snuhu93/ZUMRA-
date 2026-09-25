@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { Eye, EyeOff, Mail, Lock, User, AtSign, Loader2, Check } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, AtSign, Phone, Loader2, Check } from 'lucide-react'
 
 export default function SignUp() {
   const { signUp } = useAuth()
@@ -9,6 +9,7 @@ export default function SignUp() {
   const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +23,7 @@ export default function SignUp() {
       return
     }
     setLoading(true)
-    const { error } = await signUp(email, password, fullName, username)
+    const { error } = await signUp(email, password, fullName, username, phone)
     if (error) {
       setError(error)
       setLoading(false)
@@ -91,6 +92,21 @@ export default function SignUp() {
           </div>
 
           <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
+            <div className="relative">
+              <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+234 800 000 0000"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-800 outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20"
+              />
+            </div>
+          </div>
+
+          <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
             <div className="relative">
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -141,4 +157,4 @@ export default function SignUp() {
       </div>
     </div>
   )
-}
+                                   }
