@@ -14,7 +14,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "browser-image-compression": "^2.0.2"
+    "browser-image-compression": "^2.0.2",
+    "lucide-react": "^0.454.0"
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
