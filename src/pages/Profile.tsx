@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [relationship, setRelationship] = useState({ isFriend: false, requestSentId: null as string | null, requestReceivedId: null as string | null, isFollowing: false });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [messageBusy, setMessageBusy] = useState(false);
 
   const isOwnProfile = !username || username === myProfile?.username;
 
@@ -90,9 +91,17 @@ export default function ProfilePage() {
   };
 
   const handleMessage = async () => {
-    if (!user || !profile) return;
-    const conversationId = await getOrCreateConversation(user.id, profile.id);
-    navigate(`/messages/${conversationId}`);
+    if (!user || !profile || messageBusy) return;
+    setMessageBusy(true);
+    try {
+      const conversationId = await getOrCreateConversation(user.id, profile.id);
+      navigate(`/messages/${conversationId}`);
+    } catch (err: any) {
+      console.error('handleMessage error:', err);
+      alert(`Ba a iya buɗe message ba: ${err?.message ?? 'unknown error'}`);
+    } finally {
+      setMessageBusy(false);
+    }
   };
 
   const handleBlock = async () => {
@@ -156,7 +165,9 @@ export default function ProfilePage() {
               <button onClick={handleFollow} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">
                 {relationship.isFollowing ? 'Following' : 'Follow'}
               </button>
-              <button onClick={handleMessage} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">Message</button>
+              <button type="button" onClick={handleMessage} disabled={messageBusy} className="relative z-10 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700 disabled:opacity-60">
+                {messageBusy ? '...' : 'Message'}
+              </button>
             </>
           )}
           <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">Share</button>
@@ -177,4 +188,4 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-}
+    }
