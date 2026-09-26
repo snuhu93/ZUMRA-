@@ -74,10 +74,20 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   };
 
   const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-    } catch {
-      // clipboard not available, ignore
+    const url = `${window.location.origin}/post/${post.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.author?.full_name ?? 'Zumra', text: post.content ?? '', url });
+      } catch {
+        // user cancelled the share sheet, do nothing
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard');
+      } catch {
+        // clipboard not available, ignore
+      }
     }
   };
 
@@ -174,7 +184,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           <span className="text-sm text-gray-500 dark:text-gray-400">{post.comment_count}</span>
         </button>
 
-        <button onClick={() => navigate(`/post/${post.id}/share`)} className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800">
+        <button onClick={handleShare} className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800">
           <Share2 style={{ width: 'clamp(18px, 5vw, 20px)', height: 'clamp(18px, 5vw, 20px)' }} />
           <span className="text-sm text-gray-500 dark:text-gray-400">{post.share_count}</span>
         </button>
