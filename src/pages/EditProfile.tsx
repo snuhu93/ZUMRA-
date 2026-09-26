@@ -47,13 +47,13 @@ export default function EditProfile() {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!USERNAME_REGEX.test(cleanUsername)) {
-      setError('Username: haruffa (a-z), lambobi, ko "_" kawai, 3-20 characters.');
+      setError('Username can only contain lowercase letters, numbers, and underscores (3-20 characters).');
       return;
     }
 
     setSaving(true);
 
-    // Idan username ya canza, duba ko wani ba ya amfani da shi
+    // If username changed, check no one else is using it
     if (cleanUsername !== profile?.username) {
       const { data: existing } = await supabase
         .from('profiles')
@@ -64,7 +64,7 @@ export default function EditProfile() {
 
       if (existing) {
         setSaving(false);
-        setError('Wannan username ana amfani da shi tuni. Zaɓi wani.');
+        setError('This username is already taken. Please choose another.');
         return;
       }
     }
@@ -86,7 +86,7 @@ export default function EditProfile() {
     setSaving(false);
     if (updateError) {
       if (updateError.code === '23505') {
-        setError('Wannan username ana amfani da shi tuni. Zaɓi wani.');
+        setError('This username is already taken. Please choose another.');
       } else {
         setError('Something went wrong. Please try again.');
       }
@@ -139,4 +139,4 @@ export default function EditProfile() {
       </button>
     </div>
   );
-    }
+  }
