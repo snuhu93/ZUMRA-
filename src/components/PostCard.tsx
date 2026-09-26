@@ -6,6 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { toggleLike, toggleSave, deletePost, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import { optimizedImageUrl } from '@/utils/mediaOptimization';
+import { Heart, MessageCircle, Share2 } from 'lucide-react';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -169,12 +170,51 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-        <button onClick={handleLike} className={`flex items-center gap-1 ${liked ? 'font-semibold text-zumra-600' : ''}`}>
-          {liked ? '💚' : '🤍'} {likeCount}
+      <div className="mt-3 flex items-center justify-around border-t border-gray-100 pt-2 dark:border-gray-800">
+        <button
+          onClick={handleLike}
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <span
+            className={`flex items-center justify-center rounded-full ${liked ? 'bg-zumra-600' : 'bg-gray-100 dark:bg-gray-800'}`}
+            style={{ width: 'clamp(28px, 8vw, 34px)', height: 'clamp(28px, 8vw, 34px)' }}
+          >
+            <Heart
+              style={{ width: 'clamp(14px, 4vw, 17px)', height: 'clamp(14px, 4vw, 17px)' }}
+              fill={liked ? 'white' : 'none'}
+              color={liked ? 'white' : 'currentColor'}
+            />
+          </span>
+          <span className={`text-sm ${liked ? 'font-semibold text-zumra-600' : 'text-gray-500 dark:text-gray-400'}`}>
+            {likeCount}
+          </span>
         </button>
-        <button onClick={() => navigate(`/post/${post.id}`)} className="flex items-center gap-1">💬 {post.comment_count}</button>
-        <button onClick={() => navigate(`/post/${post.id}/share`)} className="flex items-center gap-1">↗ {post.share_count}</button>
+
+        <button
+          onClick={() => navigate(`/post/${post.id}`)}
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <span
+            className="flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+            style={{ width: 'clamp(28px, 8vw, 34px)', height: 'clamp(28px, 8vw, 34px)' }}
+          >
+            <MessageCircle style={{ width: 'clamp(14px, 4vw, 17px)', height: 'clamp(14px, 4vw, 17px)' }} />
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{post.comment_count}</span>
+        </button>
+
+        <button
+          onClick={() => navigate(`/post/${post.id}/share`)}
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <span
+            className="flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+            style={{ width: 'clamp(28px, 8vw, 34px)', height: 'clamp(28px, 8vw, 34px)' }}
+          >
+            <Share2 style={{ width: 'clamp(14px, 4vw, 17px)', height: 'clamp(14px, 4vw, 17px)' }} />
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{post.share_count}</span>
+        </button>
       </div>
     </article>
   );
