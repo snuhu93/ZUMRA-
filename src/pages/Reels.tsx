@@ -78,10 +78,20 @@ export default function Reels() {
   };
 
   const handleShare = async (post: FeedPost) => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-    } catch {
-      // clipboard not available, ignore
+    const url = `${window.location.origin}/post/${post.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.author?.full_name ?? 'Zumra', text: post.content ?? '', url });
+      } catch {
+        // user cancelled the share sheet, do nothing
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard');
+      } catch {
+        // clipboard not available, ignore
+      }
     }
   };
 
@@ -158,4 +168,4 @@ export default function Reels() {
       {loading && <p className="p-4 text-center text-xs text-gray-400">Loading...</p>}
     </div>
   );
-    }
+}
