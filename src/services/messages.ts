@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabaseClient';
 
 export interface ConversationSummary {
@@ -10,26 +9,9 @@ export interface ConversationSummary {
 
 /** Find an existing 1:1 conversation between two users, or create one. */
 export async function getOrCreateConversation(userId: string, otherUserId: string): Promise<string> {
-  const { data: mine } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', userId);
-  const myConvIds = (mine ?? []).map((r) => r.conversation_id);
-  if (myConvIds.length) {
-    const { data: shared } = await supabase
-      .from('conversation_members')
-      .select('conversation_id, conversations!inner(is_group)')
-      .eq('user_id', otherUserId)
-      .in('conversation_id', myConvIds)
-      .eq('conversations.is_group', false)
-      .maybeSingle();
-    if (shared) return shared.conversation_id as string;
-  }
-
-  const { data: conv, error } = await supabase.from('conversations').insert({ is_group: false }).select('id').single();
+  const { data, error } = await supabase.rpc('get_or_create_conversation', { other_user_id: otherUserId });
   if (error) throw error;
-  const { error: memberError } = await supabase
-    .from('conversation_members')
-    .insert([{ conversation_id: conv.id, user_id: userId }, { conversation_id: conv.id, user_id: otherUserId }]);
-  if (memberError) throw memberError;
-  return conv.id as string;
+  return data as string;
 }
 
 export async function fetchConversations(userId: string): Promise<ConversationSummary[]> {
@@ -135,4 +117,4 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
   return () => {
     supabase.removeChannel(channel);
   };
-                                        }
+  }
