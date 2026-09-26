@@ -4,7 +4,7 @@ import { fetchVideoFeed, toggleLike, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import Avatar from '@/components/Avatar';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Share2, Volume2, VolumeX } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, Volume2, VolumeX } from 'lucide-react';
 
 export default function Reels() {
   const { user } = useAuth();
@@ -34,7 +34,6 @@ export default function Reels() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Play the reel currently in view, pause the rest.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -61,7 +60,6 @@ export default function Reels() {
     return () => observer.disconnect();
   }, [posts, load]);
 
-  // Apply the mute state to every video whenever it changes.
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video) => {
       if (video) video.muted = muted;
@@ -134,37 +132,23 @@ export default function Reels() {
                 </div>
               </Link>
 
-              <div className="flex flex-col items-center" style={{ gap: 'clamp(12px, 3vh, 20px)' }}>
-                <button onClick={() => handleLike(post)} className="flex flex-col items-center gap-1 text-white">
-                  <span
-                    className={`flex items-center justify-center rounded-full ${post.liked_by_me ? 'bg-zumra-600' : 'bg-white/20'}`}
-                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
-                  >
-                    <Heart
-                      style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }}
-                      fill={post.liked_by_me ? 'white' : 'none'}
-                    />
-                  </span>
+              <div className="flex flex-col items-center text-white" style={{ gap: 'clamp(16px, 3.5vh, 24px)' }}>
+                <button onClick={() => handleLike(post)} className="flex flex-col items-center gap-1">
+                  <ThumbsUp
+                    style={{ width: 'clamp(26px, 7vw, 30px)', height: 'clamp(26px, 7vw, 30px)' }}
+                    fill={post.liked_by_me ? '#0C7D46' : 'none'}
+                    color={post.liked_by_me ? '#0C7D46' : 'white'}
+                  />
                   <span className="text-xs font-semibold">{post.like_count}</span>
                 </button>
 
-                <Link to={`/post/${post.id}`} className="flex flex-col items-center gap-1 text-white">
-                  <span
-                    className="flex items-center justify-center rounded-full bg-white/20"
-                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
-                  >
-                    <MessageCircle style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }} />
-                  </span>
+                <Link to={`/post/${post.id}`} className="flex flex-col items-center gap-1">
+                  <MessageCircle style={{ width: 'clamp(26px, 7vw, 30px)', height: 'clamp(26px, 7vw, 30px)' }} />
                   <span className="text-xs font-semibold">{post.comment_count}</span>
                 </Link>
 
-                <button onClick={() => handleShare(post)} className="flex flex-col items-center gap-1 text-white">
-                  <span
-                    className="flex items-center justify-center rounded-full bg-white/20"
-                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
-                  >
-                    <Share2 style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }} />
-                  </span>
+                <button onClick={() => handleShare(post)} className="flex flex-col items-center gap-1">
+                  <Share2 style={{ width: 'clamp(26px, 7vw, 30px)', height: 'clamp(26px, 7vw, 30px)' }} />
                 </button>
               </div>
             </div>
