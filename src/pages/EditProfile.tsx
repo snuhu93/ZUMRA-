@@ -6,11 +6,14 @@ import { supabase } from '@/lib/supabaseClient';
 import { uploadImage } from '@/services/storage';
 import Avatar from '@/components/Avatar';
 
+const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
+
 export default function EditProfile() {
   const { user, profile, refreshProfile } = useAuth();
   const { dataSaver } = useSettings();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
+  const [username, setUsername] = useState(profile?.username ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [location, setLocation] = useState(profile?.location ?? '');
   const [website, setWebsite] = useState(profile?.website ?? '');
@@ -39,12 +42,38 @@ export default function EditProfile() {
 
   const handleSave = async () => {
     if (!user) return;
-    setSaving(true);
     setError(null);
+
+    const cleanUsername = username.trim().toLowerCase();
+
+    if (!USERNAME_REGEX.test(cleanUsername)) {
+      setError('Username: haruffa (a-z), lambobi, ko "_" kawai, 3-20 characters.');
+      return;
+    }
+
+    setSaving(true);
+
+    // Idan username ya canza, duba ko wani ba ya amfani da shi
+    if (cleanUsername !== profile?.username) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', cleanUsername)
+        .neq('id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        setSaving(false);
+        setError('Wannan username ana amfani da shi tuni. Zaɓi wani.');
+        return;
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         full_name: fullName.trim(),
+        username: cleanUsername,
         bio: bio.trim() || null,
         location: location.trim() || null,
         website: website.trim() || null,
@@ -53,9 +82,14 @@ export default function EditProfile() {
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
+
     setSaving(false);
     if (updateError) {
-      setError('Something went wrong. Please try again.');
+      if (updateError.code === '23505') {
+        setError('Wannan username ana amfani da shi tuni. Zaɓi wani.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
       return;
     }
     await refreshProfile();
@@ -83,6 +117,18 @@ export default function EditProfile() {
 
       <div className="space-y-3">
         <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
+
+        <div className="flex items-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+          <span className="pl-2.5 text-sm text-gray-400">@</span>
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            placeholder="username"
+            maxLength={20}
+            className="w-full bg-transparent p-2.5 pl-1 text-sm outline-none"
+          />
+        </div>
+
         <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Bio" maxLength={300} rows={3} className="w-full resize-none rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
         <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
         <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
@@ -93,4 +139,4 @@ export default function EditProfile() {
       </button>
     </div>
   );
-}
+    }
