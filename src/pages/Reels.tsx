@@ -4,6 +4,7 @@ import { fetchVideoFeed, toggleLike, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import Avatar from '@/components/Avatar';
 import { Link } from 'react-router-dom';
+import { Heart, MessageCircle, Share2, Volume2, VolumeX } from 'lucide-react';
 
 export default function Reels() {
   const { user } = useAuth();
@@ -78,6 +79,14 @@ export default function Reels() {
     }
   };
 
+  const handleShare = async (post: FeedPost) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+    } catch {
+      // clipboard not available, ignore
+    }
+  };
+
   if (!loading && posts.length === 0) {
     return <p className="p-10 text-center text-sm text-gray-500">No videos yet.</p>;
   }
@@ -86,10 +95,16 @@ export default function Reels() {
     <div ref={containerRef} className="h-[calc(100vh-8rem)] w-full snap-y snap-mandatory overflow-y-scroll bg-black">
       <button
         onClick={() => setMuted((m) => !m)}
-        className="fixed right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-xl text-white"
+        className="fixed z-50 flex items-center justify-center rounded-full bg-black/50 text-white"
+        style={{
+          top: 'clamp(12px, 2vh, 16px)',
+          right: 'clamp(12px, 3vw, 16px)',
+          width: 'clamp(36px, 9vw, 40px)',
+          height: 'clamp(36px, 9vw, 40px)',
+        }}
         aria-label={muted ? 'Unmute' : 'Mute'}
       >
-        {muted ? '🔇' : '🔊'}
+        {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
       </button>
 
       {posts.map((post) => {
@@ -119,15 +134,38 @@ export default function Reels() {
                 </div>
               </Link>
 
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center" style={{ gap: 'clamp(12px, 3vh, 20px)' }}>
                 <button onClick={() => handleLike(post)} className="flex flex-col items-center gap-1 text-white">
-                  <span className="text-2xl">{post.liked_by_me ? '❤️' : '🤍'}</span>
-                  <span className="text-xs">{post.like_count}</span>
+                  <span
+                    className={`flex items-center justify-center rounded-full ${post.liked_by_me ? 'bg-zumra-600' : 'bg-white/20'}`}
+                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
+                  >
+                    <Heart
+                      style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }}
+                      fill={post.liked_by_me ? 'white' : 'none'}
+                    />
+                  </span>
+                  <span className="text-xs font-semibold">{post.like_count}</span>
                 </button>
+
                 <Link to={`/post/${post.id}`} className="flex flex-col items-center gap-1 text-white">
-                  <span className="text-2xl">💬</span>
-                  <span className="text-xs">{post.comment_count}</span>
+                  <span
+                    className="flex items-center justify-center rounded-full bg-white/20"
+                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
+                  >
+                    <MessageCircle style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }} />
+                  </span>
+                  <span className="text-xs font-semibold">{post.comment_count}</span>
                 </Link>
+
+                <button onClick={() => handleShare(post)} className="flex flex-col items-center gap-1 text-white">
+                  <span
+                    className="flex items-center justify-center rounded-full bg-white/20"
+                    style={{ width: 'clamp(38px, 10vw, 46px)', height: 'clamp(38px, 10vw, 46px)' }}
+                  >
+                    <Share2 style={{ width: 'clamp(18px, 5vw, 22px)', height: 'clamp(18px, 5vw, 22px)' }} />
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -136,4 +174,4 @@ export default function Reels() {
       {loading && <p className="p-4 text-center text-xs text-gray-400">Loading...</p>}
     </div>
   );
-}
+    }
