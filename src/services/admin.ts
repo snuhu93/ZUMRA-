@@ -1,18 +1,40 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export async function adminSearchUsers(query: string) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, full_name, avatar_url, is_suspended, is_admin, created_at')
-    .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
-    .limit(20);
+export interface AdminUserRow {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+  is_suspended: boolean;
+  is_admin: boolean;
+  created_at: string;
+  post_count: number;
+}
+
+export async function adminSearchUsers(query: string): Promise<AdminUserRow[]> {
+  const { data, error } = await supabase.rpc('admin_list_users_with_stats', {
+    search: query || null,
+  });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as AdminUserRow[];
 }
 
 export async function adminSuspendUser(userId: string, suspended: boolean) {
   const { error } = await supabase.rpc('admin_suspend_user', { p_user_id: userId, p_suspended: suspended });
   if (error) throw error;
+}
+
+export async function adminDeleteUser(targetUserId: string) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error('No active session');
+
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+    body: { target_user_id: targetUserId },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function adminFetchPosts() {
@@ -49,7 +71,9 @@ export async function adminStats() {
   const { data, error } = await supabase.rpc('admin_platform_stats');
   if (error) throw error;
   return data?.[0] ?? { total_users: 0, total_posts: 0, total_reports_open: 0 };
-}export async function adminSendAnnouncement(message: string) {
+}
+
+export async function adminSendAnnouncement(message: string) {
   const { error } = await supabase.rpc('admin_send_announcement', { p_message: message });
   if (error) throw error;
-    }
+}
