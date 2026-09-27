@@ -4,8 +4,8 @@ import App from './App';
 import "./styles/index.css";
 import { registerSW } from 'virtual:pwa-register';
 
-// Sabon abu: yana bincika sabon version na app ɗin a background,
-// kuma yana sabunta shi ta atomatik ba tare da user ya yi komai ba.
+// Auto-updates the app in the background by checking for a new
+// version and applying it without requiring any user action.
 registerSW({ immediate: true });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
