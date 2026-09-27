@@ -23,6 +23,7 @@ export default function Admin() {
   const debouncedQuery = useDebounce(userQuery, 400);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
@@ -39,8 +40,10 @@ export default function Admin() {
   useEffect(() => {
     if (tab !== 'users') return;
     setUsersLoading(true);
+    setUsersError(null);
     adminSearchUsers(debouncedQuery)
       .then(setUsers)
+      .catch((e: any) => setUsersError(e.message ?? String(e)))
       .finally(() => setUsersLoading(false));
   }, [tab, debouncedQuery]);
 
@@ -116,10 +119,16 @@ export default function Admin() {
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-800 dark:bg-gray-900"
           />
 
+          {usersError && (
+            <p className="mt-2 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-900/30 dark:text-red-400">
+              {usersError}
+            </p>
+          )}
+
           {usersLoading && <p className="mt-3 text-center text-xs text-gray-500">Loading...</p>}
 
           <div className="mt-3 divide-y divide-gray-100 dark:divide-gray-800">
-            {!usersLoading && users.length === 0 && (
+            {!usersLoading && !usersError && users.length === 0 && (
               <p className="py-6 text-center text-xs text-gray-500">No users found.</p>
             )}
             {users.map((u) => (
@@ -205,4 +214,4 @@ export default function Admin() {
       {tab === 'announcements' && <AdminAnnouncements />}
     </div>
   );
-         }
+        }
