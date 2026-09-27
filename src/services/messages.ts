@@ -106,6 +106,11 @@ export async function markConversationRead(conversationId: string, userId: strin
   if (error) throw error;
 }
 
+export async function unreadConversationsCount(userId: string): Promise<number> {
+  const conversations = await fetchConversations(userId);
+  return conversations.filter((c) => c.unread).length;
+}
+
 /** Subscribe to new messages in a conversation. Caller must unsubscribe on unmount. */
 export function subscribeToConversation(conversationId: string, onInsert: (msg: any) => void) {
   const channel = supabase
@@ -117,4 +122,4 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
   return () => {
     supabase.removeChannel(channel);
   };
-  }
+    }
