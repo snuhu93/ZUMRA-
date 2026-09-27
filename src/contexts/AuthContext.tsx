@@ -24,25 +24,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string): Promise<Profile | null> => {
     const { data }: { data: Profile | null } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) setProfile(data);
+    return data;
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const currentUser = data.session?.user ?? null;
+      if (currentUser) {
+        const p = await loadProfile(currentUser.id);
+        if (p?.is_suspended) {
+          // account was suspended while this device still had an active session
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+      }
       setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user.id) loadProfile(data.session.user.id);
+      setUser(currentUser);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, newSession: Session | null) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, newSession: Session | null) => {
       if (newSession?.user) {
-        loadProfile(newSession.user.id);
+        const p = await loadProfile(newSession.user.id);
+        if (p?.is_suspended) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+        setSession(newSession);
+        setUser(newSession.user);
       } else {
+        setSession(null);
+        setUser(null);
         setProfile(null);
       }
     });
@@ -68,8 +90,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn: AuthContextValue['signIn'] = async ({ email, password }) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+
+    if (data.user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_suspended')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileData?.is_suspended) {
+        await supabase.auth.signOut();
+        return { error: 'This account has been suspended. Contact support if you believe this is a mistake.' };
+      }
+    }
     return { error: null };
   };
 
@@ -90,7 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    if (user) await loadProfile(user.id);
+    if (user) {
+      const p = await loadProfile(user.id);
+      if (p?.is_suspended) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      }
+    }
   };
 
   return (
@@ -106,4 +149,4 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-         }
+      }
