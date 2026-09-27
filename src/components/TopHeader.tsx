@@ -1,12 +1,37 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { unreadCount } from '@/services/notifications';
+import { unreadConversationsCount } from '@/services/messages';
 
 export default function TopHeader() {
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    const load = () => {
+      unreadCount(user.id).then((n) => {
+        if (!cancelled) setUnreadNotifs(n);
+      });
+      unreadConversationsCount(user.id).then((n) => {
+        if (!cancelled) setUnreadMessages(n);
+      });
+    };
+
+    load();
+    const interval = setInterval(load, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -47,16 +72,27 @@ export default function TopHeader() {
         <Link
           to="/notifications"
           aria-label="Notifications"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+          onClick={() => setUnreadNotifs(0)}
+          className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           🔔
+          {unreadNotifs > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+              {unreadNotifs > 9 ? '9+' : unreadNotifs}
+            </span>
+          )}
         </Link>
         <Link
           to="/messages"
           aria-label="Messages"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+          className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           💬
+          {unreadMessages > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+              {unreadMessages > 9 ? '9+' : unreadMessages}
+            </span>
+          )}
         </Link>
         <Link
           to="/create"
@@ -121,4 +157,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-      }
+                                }
