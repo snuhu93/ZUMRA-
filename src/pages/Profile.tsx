@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -6,6 +6,7 @@ import Avatar from '@/components/Avatar';
 import PostCard from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import { fetchProfilePosts, type FeedPost } from '@/services/posts';
+import { getPublicUrl } from '@/services/storage';
 import {
   sendFriendRequest,
   cancelFriendRequest,
@@ -20,6 +21,8 @@ import { getOrCreateConversation } from '@/services/messages';
 import { blockUser } from '@/services/moderation';
 import type { Profile } from '@/types/database';
 
+type ProfileTab = 'posts' | 'about' | 'photos' | 'videos';
+
 export default function ProfilePage() {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: myProfile } = useAuth();
@@ -31,6 +34,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [messageBusy, setMessageBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
 
   const isOwnProfile = !username || username === myProfile?.username;
 
@@ -61,6 +65,37 @@ export default function ProfilePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Duk hotunan da aka ciro daga posts, don Photos tab
+  const allPhotos = useMemo(() => {
+    const items: { id: string; url: string; postId: string }[] = [];
+    for (const post of posts) {
+      for (const m of post.post_media ?? []) {
+        if (m.media_type === 'image') {
+          items.push({ id: m.id, url: getPublicUrl('post-images', m.storage_path) ?? '', postId: post.id });
+        }
+      }
+    }
+    return items;
+  }, [posts]);
+
+  // Duk bidiyon da aka ciro daga posts, don Videos tab
+  const allVideos = useMemo(() => {
+    const items: { id: string; url: string; thumbnail: string | null; postId: string }[] = [];
+    for (const post of posts) {
+      for (const m of post.post_media ?? []) {
+        if (m.media_type === 'video') {
+          items.push({
+            id: m.id,
+            url: getPublicUrl('post-videos', m.storage_path) ?? '',
+            thumbnail: m.thumbnail_path ? getPublicUrl('post-images', m.thumbnail_path) : null,
+            postId: post.id,
+          });
+        }
+      }
+    }
+    return items;
+  }, [posts]);
 
   const handleFriendAction = async () => {
     if (!user || !profile) return;
@@ -129,6 +164,13 @@ export default function ProfilePage() {
     ? 'Accept Request'
     : 'Add Friend';
 
+  const tabs: { key: ProfileTab; label: string }[] = [
+    { key: 'posts', label: 'Posts' },
+    { key: 'about', label: 'About' },
+    { key: 'photos', label: 'Photos' },
+    { key: 'videos', label: 'Videos' },
+  ];
+
   return (
     <div>
       <div className="relative h-40 w-full bg-gray-200 dark:bg-gray-800">
@@ -180,12 +222,97 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-800">
-        {posts.length === 0 && <p className="p-10 text-center text-sm text-gray-500">No posts yet.</p>}
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} onChanged={load} />
+      {/* Sabon Facebook-style tabs */}
+      <div className="flex border-t border-gray-200 dark:border-gray-800">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 border-b-2 py-3 text-sm font-semibold ${
+              activeTab === tab.key
+                ? 'border-zumra-500 text-zumra-600'
+                : 'border-transparent text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
+
+      {activeTab === 'posts' && (
+        <div className="border-t border-gray-200 dark:border-gray-800">
+          {posts.length === 0 && <p className="p-10 text-center text-sm text-gray-500">No posts yet.</p>}
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} onChanged={load} />
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'about' && (
+        <div className="border-t border-gray-200 p-4 dark:border-gray-800">
+          <h2 className="mb-3 text-sm font-bold text-gray-500 dark:text-gray-400">Details</h2>
+          <div className="space-y-3 text-sm">
+            <p><span className="font-semibold">Username:</span> @{profile.username}</p>
+            {profile.bio && <p><span className="font-semibold">Bio:</span> {profile.bio}</p>}
+            {profile.location && <p><span className="font-semibold">Location:</span> 📍 {profile.location}</p>}
+            {profile.website && (
+              <p>
+                <span className="font-semibold">Website:</span>{' '}
+                <a href={profile.website} target="_blank" rel="noreferrer" className="text-zumra-600">{profile.website}</a>
+              </p>
+            )}
+            {!profile.bio && !profile.location && !profile.website && (
+              <p className="text-gray-500">No additional details added yet.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'photos' && (
+        <div className="border-t border-gray-200 p-1 dark:border-gray-800">
+          {allPhotos.length === 0 ? (
+            <p className="p-10 text-center text-sm text-gray-500">No photos yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {allPhotos.map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.url}
+                  alt=""
+                  loading="lazy"
+                  onClick={() => navigate(`/post/${photo.postId}`)}
+                  className="aspect-square w-full cursor-pointer object-cover"
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'videos' && (
+        <div className="border-t border-gray-200 p-1 dark:border-gray-800">
+          {allVideos.length === 0 ? (
+            <p className="p-10 text-center text-sm text-gray-500">No videos yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {allVideos.map((video) => (
+                <button
+                  key={video.id}
+                  onClick={() => navigate(`/post/${video.postId}`)}
+                  className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-gray-800"
+                >
+                  {video.thumbnail ? (
+                    <img src={video.thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <video src={`${video.url}#t=0.1`} preload="metadata" muted className="absolute inset-0 h-full w-full object-cover" />
+                  )}
+                  <span className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm">▶</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
     }
