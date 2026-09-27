@@ -38,30 +38,30 @@ export default function TopHeader() {
       <Link
         to="/search"
         aria-label="Search"
-        className="flex flex-1 items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
       >
         🔍 <span className="truncate">Search Zumra</span>
       </Link>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         <Link
           to="/notifications"
           aria-label="Notifications"
-          className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           🔔
         </Link>
         <Link
           to="/messages"
           aria-label="Messages"
-          className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           💬
         </Link>
         <Link
           to="/create"
           aria-label="Create post"
-          className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           ➕
         </Link>
@@ -70,17 +70,17 @@ export default function TopHeader() {
           <Link
             to="/admin"
             aria-label="Admin"
-            className="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
           >
             ⚙️
           </Link>
         )}
 
-        <div className="relative" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Profile menu"
-            className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gray-200 text-sm font-bold dark:bg-gray-700"
+            className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-gray-200 text-sm font-bold dark:bg-gray-700"
           >
             {profile?.avatar_url ? (
               <img
@@ -121,4 +121,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-  }
+      }
