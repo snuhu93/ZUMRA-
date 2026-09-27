@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { toggleLike, toggleSave, deletePost, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import { optimizedImageUrl } from '@/utils/mediaOptimization';
-import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe } from 'lucide-react';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -18,6 +18,58 @@ function timeAgo(iso: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(iso).toLocaleDateString();
+}
+
+// Sabon component: video wanda ke play/pause kansa yayin scrolling
+function FeedVideoPreview({
+  src,
+  thumbnail,
+  onOpen,
+}: {
+  src: string;
+  thumbnail: string | null;
+  onOpen: () => void;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {});
+        } else {
+          el.pause();
+        }
+      },
+      { threshold: 0.6 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <button
+      onClick={onOpen}
+      className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
+      aria-label="Play video"
+    >
+      <video
+        ref={ref}
+        src={`${src}#t=0.1`}
+        preload="metadata"
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {thumbnail && (
+        <img src={thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: 0 }} />
+      )}
+      <span className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-xl">▶</span>
+    </button>
+  );
 }
 
 export default function PostCard({ post, onChanged }: { post: FeedPost; onChanged?: () => void }) {
@@ -101,8 +153,8 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           <Avatar src={post.author?.avatar_url} name={post.author?.full_name ?? 'User'} />
           <div>
             <p className="text-sm font-semibold">{post.author?.full_name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              @{post.author?.username} · {timeAgo(post.created_at)}
+            <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              @{post.author?.username} · {timeAgo(post.created_at)} · <Globe size={12} />
             </p>
           </div>
         </Link>
@@ -141,6 +193,13 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
                   loading="lazy"
                   className="max-h-96 w-full rounded-lg object-cover"
                 />
+              ) : !dataSaver && autoplayVideos ? (
+                <FeedVideoPreview
+                  key={m.id}
+                  src={getPublicUrl('post-videos', m.storage_path) ?? ''}
+                  thumbnail={m.thumbnail_path ? getPublicUrl('post-images', m.thumbnail_path) : null}
+                  onOpen={() => { setFullscreenMediaId(m.id); setMuted(false); }}
+                />
               ) : (
                 <button
                   key={m.id}
@@ -148,15 +207,6 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
                   className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
                   aria-label="Play video"
                 >
-                  {!m.thumbnail_path && !dataSaver && autoplayVideos && (
-                    <video
-                      src={`${getPublicUrl('post-videos', m.storage_path) ?? ''}#t=0.1`}
-                      preload="metadata"
-                      muted
-                      playsInline
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
                   {m.thumbnail_path && (
                     <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover" />
                   )}
