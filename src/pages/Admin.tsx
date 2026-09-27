@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react';
 import {
   adminSearchUsers,
   adminSuspendUser,
+  adminDeleteUser,
   adminFetchPosts,
   adminDeletePost,
   adminFetchReports,
   adminResolveReport,
   adminStats,
+  type AdminUserRow,
 } from '@/services/admin';
 import AdminAnnouncements from '@/components/AdminAnnouncements';
+import Avatar from '@/components/Avatar';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type Tab = 'stats' | 'users' | 'posts' | 'reports' | 'announcements';
 
@@ -16,7 +20,10 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('stats');
   const [stats, setStats] = useState({ total_users: 0, total_posts: 0, total_reports_open: 0 });
   const [userQuery, setUserQuery] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
+  const debouncedQuery = useDebounce(userQuery, 400);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
 
@@ -29,13 +36,34 @@ export default function Admin() {
     if (tab === 'reports') adminFetchReports().then(setReports);
   }, [tab]);
 
-  const handleSearchUsers = async () => {
-    setUsers(await adminSearchUsers(userQuery));
-  };
+  useEffect(() => {
+    if (tab !== 'users') return;
+    setUsersLoading(true);
+    adminSearchUsers(debouncedQuery)
+      .then(setUsers)
+      .finally(() => setUsersLoading(false));
+  }, [tab, debouncedQuery]);
 
   const handleSuspend = async (id: string, suspended: boolean) => {
     await adminSuspendUser(id, !suspended);
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, is_suspended: !suspended } : u)));
+  };
+
+  const handleDeleteUser = async (u: AdminUserRow) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete @${u.username}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(u.id);
+    try {
+      await adminDeleteUser(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (e: any) {
+      alert(e.message ?? 'Failed to delete user');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleDeletePost = async (id: string) => {
@@ -81,32 +109,51 @@ export default function Admin() {
 
       {tab === 'users' && (
         <div className="p-4">
-          <div className="flex gap-2">
-            <input
-              value={userQuery}
-              onChange={(e) => setUserQuery(e.target.value)}
-              placeholder="Search username or name"
-              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-800 dark:bg-gray-900"
-            />
-            <button onClick={handleSearchUsers} className="rounded-lg bg-zumra-500 px-3 py-2 text-sm text-white">
-              Search
-            </button>
-          </div>
+          <input
+            value={userQuery}
+            onChange={(e) => setUserQuery(e.target.value)}
+            placeholder="Search by username or name..."
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-800 dark:bg-gray-900"
+          />
+
+          {usersLoading && <p className="mt-3 text-center text-xs text-gray-500">Loading...</p>}
+
           <div className="mt-3 divide-y divide-gray-100 dark:divide-gray-800">
+            {!usersLoading && users.length === 0 && (
+              <p className="py-6 text-center text-xs text-gray-500">No users found.</p>
+            )}
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-sm font-medium">
-                    {u.full_name} {u.is_suspended && <span className="text-red-500">(suspended)</span>}
-                  </p>
-                  <p className="text-xs text-gray-500">@{u.username}</p>
+              <div key={u.id} className="flex items-center justify-between gap-2 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar src={u.avatar_url} name={u.full_name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {u.full_name}
+                      {u.is_admin && <span className="ml-1 text-xs text-zumra-500">(admin)</span>}
+                      {u.is_suspended && <span className="ml-1 text-xs text-red-500">(suspended)</span>}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      @{u.username} · {u.post_count} posts
+                    </p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleSuspend(u.id, u.is_suspended)}
-                  className="text-xs font-semibold text-red-500"
-                >
-                  {u.is_suspended ? 'Unsuspend' : 'Suspend'}
-                </button>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button
+                    onClick={() => handleSuspend(u.id, u.is_suspended)}
+                    className="text-xs font-semibold text-amber-500"
+                  >
+                    {u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                  </button>
+                  {!u.is_admin && (
+                    <button
+                      onClick={() => handleDeleteUser(u)}
+                      disabled={deletingId === u.id}
+                      className="text-xs font-semibold text-red-500 disabled:opacity-50"
+                    >
+                      {deletingId === u.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -158,4 +205,4 @@ export default function Admin() {
       {tab === 'announcements' && <AdminAnnouncements />}
     </div>
   );
-}
+         }
