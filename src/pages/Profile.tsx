@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
-import PostCard from '@/components/PostCard';
+import PostCard, { ImageLightbox } from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import { fetchProfilePosts, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [messageBusy, setMessageBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
+  const [photoLightboxIndex, setPhotoLightboxIndex] = useState<number | null>(null);
 
   const isOwnProfile = !username || username === myProfile?.username;
 
@@ -66,7 +67,6 @@ export default function ProfilePage() {
     load();
   }, [load]);
 
-  // Duk hotunan da aka ciro daga posts, don Photos tab
   const allPhotos = useMemo(() => {
     const items: { id: string; url: string; postId: string }[] = [];
     for (const post of posts) {
@@ -79,7 +79,6 @@ export default function ProfilePage() {
     return items;
   }, [posts]);
 
-  // Duk bidiyon da aka ciro daga posts, don Videos tab
   const allVideos = useMemo(() => {
     const items: { id: string; url: string; thumbnail: string | null; postId: string }[] = [];
     for (const post of posts) {
@@ -222,7 +221,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Sabon Facebook-style tabs */}
       <div className="flex border-t border-gray-200 dark:border-gray-800">
         {tabs.map((tab) => (
           <button
@@ -274,13 +272,13 @@ export default function ProfilePage() {
             <p className="p-10 text-center text-sm text-gray-500">No photos yet.</p>
           ) : (
             <div className="grid grid-cols-3 gap-1">
-              {allPhotos.map((photo) => (
+              {allPhotos.map((photo, index) => (
                 <img
                   key={photo.id}
                   src={photo.url}
                   alt=""
                   loading="lazy"
-                  onClick={() => navigate(`/post/${photo.postId}`)}
+                  onClick={() => setPhotoLightboxIndex(index)}
                   className="aspect-square w-full cursor-pointer object-cover"
                 />
               ))}
@@ -313,6 +311,14 @@ export default function ProfilePage() {
           )}
         </div>
       )}
+
+      {photoLightboxIndex !== null && (
+        <ImageLightbox
+          images={allPhotos.map((p) => p.url)}
+          startIndex={photoLightboxIndex}
+          onClose={() => setPhotoLightboxIndex(null)}
+        />
+      )}
     </div>
   );
-    }
+                                        }
