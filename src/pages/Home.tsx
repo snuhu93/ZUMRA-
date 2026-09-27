@@ -5,7 +5,34 @@ import { fetchFeed, type FeedPost } from '@/services/posts';
 import PostCard from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import StatusBar from '@/components/StatusBar';
+import Avatar from '@/components/Avatar';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { Image as ImageIcon } from 'lucide-react';
+
+// Sabon component: "What's on your mind?" composer bar (Facebook style)
+function CreatePostBar() {
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  return (
+    <div className="flex items-center gap-3 border-b border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+      <Avatar src={profile?.avatar_url} name={profile?.full_name ?? 'User'} size={40} />
+      <button
+        onClick={() => navigate('/create')}
+        className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-left text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+      >
+        What's on your mind?
+      </button>
+      <button
+        onClick={() => navigate('/create?media=photo')}
+        aria-label="Add photo"
+        className="flex items-center justify-center rounded-full p-2 text-green-600"
+      >
+        <ImageIcon size={22} />
+      </button>
+    </div>
+  );
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -61,6 +88,8 @@ export default function Home() {
     <div>
       <StatusBar />
 
+      <CreatePostBar />
+
       {loading && (
         <div>
           <SkeletonPost />
@@ -89,4 +118,4 @@ export default function Home() {
       {loadingMore && <SkeletonPost />}
     </div>
   );
-}
+         }
