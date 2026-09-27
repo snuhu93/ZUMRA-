@@ -6,7 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { toggleLike, toggleSave, deletePost, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import { optimizedImageUrl } from '@/utils/mediaOptimization';
-import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -72,6 +72,87 @@ function FeedVideoPreview({
   );
 }
 
+// Sabon component: fullscreen image viewer mai swipe tsakanin hotuna (ana amfani da shi a PostCard da ProfilePage)
+export function ImageLightbox({
+  images,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(startIndex);
+  const touchStartX = useRef<number | null>(null);
+
+  const goPrev = () => setIndex((i) => (i > 0 ? i - 1 : i));
+  const goNext = () => setIndex((i) => (i < images.length - 1 ? i + 1 : i));
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (diff > 50) goPrev();
+    else if (diff < -50) goNext();
+    touchStartX.current = null;
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <button
+        onClick={onClose}
+        className="fixed z-50 flex items-center justify-center rounded-full bg-black/50 text-white"
+        style={{
+          top: 'clamp(12px, 2vh, 16px)',
+          left: 'clamp(12px, 3vw, 16px)',
+          width: 'clamp(36px, 9vw, 40px)',
+          height: 'clamp(36px, 9vw, 40px)',
+        }}
+        aria-label="Close"
+      >
+        <X size={20} />
+      </button>
+
+      {images.length > 1 && (
+        <span
+          className="fixed z-50 rounded-full bg-black/50 px-3 py-1 text-xs text-white"
+          style={{ top: 'clamp(12px, 2vh, 16px)', right: 'clamp(12px, 3vw, 16px)' }}
+        >
+          {index + 1} / {images.length}
+        </span>
+      )}
+
+      {images.length > 1 && index > 0 && (
+        <button
+          onClick={goPrev}
+          className="fixed left-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white"
+          aria-label="Previous"
+        >
+          <ChevronLeft size={22} />
+        </button>
+      )}
+
+      <img src={images[index]} alt="" className="max-h-full max-w-full object-contain" />
+
+      {images.length > 1 && index < images.length - 1 && (
+        <button
+          onClick={goNext}
+          className="fixed right-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white"
+          aria-label="Next"
+        >
+          <ChevronRight size={22} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function PostCard({ post, onChanged }: { post: FeedPost; onChanged?: () => void }) {
   const { user } = useAuth();
   const { dataSaver, autoplayVideos } = useSettings();
@@ -83,6 +164,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const [busy, setBusy] = useState(false);
   const [fullscreenMediaId, setFullscreenMediaId] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   const isOwner = user?.id === post.author_id;
@@ -146,6 +228,10 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const imageWidth = dataSaver ? 480 : 800;
   const activeVideo = post.post_media?.find((m) => m.id === fullscreenMediaId);
 
+  const sortedMedia = post.post_media?.slice().sort((a, b) => a.position - b.position) ?? [];
+  const imageMedia = sortedMedia.filter((m) => m.media_type === 'image');
+  const imageUrls = imageMedia.map((m) => optimizedImageUrl(getPublicUrl('post-images', m.storage_path) ?? '', imageWidth));
+
   return (
     <article className="mb-2 bg-white p-4 dark:bg-gray-900">
       <div className="flex items-start justify-between">
@@ -180,40 +266,39 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
 
       {post.content && <p className="mt-3 whitespace-pre-wrap text-sm">{post.content}</p>}
 
-      {post.post_media?.length > 0 && (
-        <div className={`mt-3 grid gap-1 ${post.post_media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {post.post_media
-            .sort((a, b) => a.position - b.position)
-            .map((m) =>
-              m.media_type === 'image' ? (
-                <img
-                  key={m.id}
-                  src={optimizedImageUrl(getPublicUrl('post-images', m.storage_path) ?? '', imageWidth)}
-                  alt=""
-                  loading="lazy"
-                  className="max-h-96 w-full rounded-lg object-cover"
-                />
-              ) : !dataSaver && autoplayVideos ? (
-                <FeedVideoPreview
-                  key={m.id}
-                  src={getPublicUrl('post-videos', m.storage_path) ?? ''}
-                  thumbnail={m.thumbnail_path ? getPublicUrl('post-images', m.thumbnail_path) : null}
-                  onOpen={() => { setFullscreenMediaId(m.id); setMuted(false); }}
-                />
-              ) : (
-                <button
-                  key={m.id}
-                  onClick={() => { setFullscreenMediaId(m.id); setMuted(false); }}
-                  className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
-                  aria-label="Play video"
-                >
-                  {m.thumbnail_path && (
-                    <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  )}
-                  <span className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-xl">▶</span>
-                </button>
-              )
-            )}
+      {sortedMedia.length > 0 && (
+        <div className={`mt-3 grid gap-1 ${sortedMedia.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {sortedMedia.map((m) =>
+            m.media_type === 'image' ? (
+              <img
+                key={m.id}
+                src={optimizedImageUrl(getPublicUrl('post-images', m.storage_path) ?? '', imageWidth)}
+                alt=""
+                loading="lazy"
+                onClick={() => setLightboxIndex(imageMedia.findIndex((im) => im.id === m.id))}
+                className="max-h-96 w-full cursor-pointer rounded-lg object-cover"
+              />
+            ) : !dataSaver && autoplayVideos ? (
+              <FeedVideoPreview
+                key={m.id}
+                src={getPublicUrl('post-videos', m.storage_path) ?? ''}
+                thumbnail={m.thumbnail_path ? getPublicUrl('post-images', m.thumbnail_path) : null}
+                onOpen={() => { setFullscreenMediaId(m.id); setMuted(false); }}
+              />
+            ) : (
+              <button
+                key={m.id}
+                onClick={() => { setFullscreenMediaId(m.id); setMuted(false); }}
+                className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
+                aria-label="Play video"
+              >
+                {m.thumbnail_path && (
+                  <img src={getPublicUrl('post-images', m.thumbnail_path) ?? ''} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                )}
+                <span className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-xl">▶</span>
+              </button>
+            )
+          )}
         </div>
       )}
 
@@ -315,6 +400,14 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
             </div>
           </div>
         </div>
+      )}
+
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          images={imageUrls}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </article>
   );
