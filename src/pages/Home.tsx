@@ -16,7 +16,12 @@ function CreatePostBar() {
 
   return (
     <div className="flex items-center gap-3 border-b border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
-      <Avatar src={profile?.avatar_url} name={profile?.full_name ?? 'User'} size={40} />
+      <button
+        onClick={() => navigate(`/profile/${profile?.username ?? ''}`)}
+        aria-label="Open your profile"
+      >
+        <Avatar src={profile?.avatar_url} name={profile?.full_name ?? 'User'} size={40} />
+      </button>
       <button
         onClick={() => navigate('/create')}
         className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-left text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
@@ -118,4 +123,4 @@ export default function Home() {
       {loadingMore && <SkeletonPost />}
     </div>
   );
-         }
+          }
