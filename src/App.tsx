@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminRoute from '@/components/AdminRoute';
+import WelcomeModal from '@/components/WelcomeModal';
 import AppLayout from '@/layouts/AppLayout';
 
 // Lazy-loaded routes -- keeps the initial JS bundle small for low-end devices.
@@ -61,6 +62,9 @@ export default function App() {
       <AuthProvider>
         <SettingsProvider>
           <AuthGate>
+            {/* Welcome message: shown on top of whatever page the user opens first */}
+            <WelcomeModal />
+
             <Suspense fallback={<PageFallback />}>
               <Routes>
                 {/* Public / auth routes */}
