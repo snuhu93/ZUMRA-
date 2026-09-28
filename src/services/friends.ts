@@ -62,6 +62,7 @@ export async function fetchSuggestedFriends(userId: string, excludeIds: string[]
     .from('profiles')
     .select('id, username, full_name, avatar_url')
     .neq('id', userId)
+    .eq('is_admin', false)
     .not('id', 'in', `(${[userId, ...excludeIds].join(',') || userId})`)
     .limit(10);
   if (error) throw error;
