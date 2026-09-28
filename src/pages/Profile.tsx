@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
+import LanguageSelector from '@/components/LanguageSelector';
 import PostCard, { ImageLightbox } from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import { fetchProfilePosts, type FeedPost } from '@/services/posts';
@@ -246,6 +247,13 @@ export default function ProfilePage() {
             </>
           )}
         </div>
+
+        {isOwnProfile && (
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            <span className="font-semibold">🌐 Language:</span>
+            <LanguageSelector />
+          </div>
+        )}
       </div>
 
       <div className="flex border-t border-gray-200 dark:border-gray-800">
@@ -348,4 +356,4 @@ export default function ProfilePage() {
       )}
     </div>
   );
-                                                    }
+    }
