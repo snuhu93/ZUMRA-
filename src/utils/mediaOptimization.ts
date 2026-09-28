@@ -50,14 +50,15 @@ export function optimizedImageUrl(publicUrl: string, width: number, quality = 70
   const separator = publicUrl.includes('?') ? '&' : '?';
   return `${publicUrl}${separator}width=${width}&quality=${quality}&resize=cover`;
 }
+
 export interface VideoCompressOptions {
   dataSaver: boolean;
   onProgress?: (percent: number) => void;
 }
 
 /**
- * Sake matse bidiyo a browser kafin a loda shi. Idan bidiyon ya riga ya
- * kankanta ko matsewar ta kasa, ana mayar da fayil din asali.
+ * Re-compresses a video in the browser before upload. If the video is
+ * already small, or compression fails, the original file is returned.
  */
 export async function compressVideo(
   file: File,
@@ -100,7 +101,7 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
 
     const stream = canvas.captureStream(30);
 
-    // Sauti: ana daukar ta da tare da a kunna ta a lasifika ba
+    // Audio: captured into the recording without playing through the speaker
     let audioCtx: AudioContext | null = null;
     try {
       audioCtx = new AudioContext();
@@ -110,7 +111,7 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
       dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
       await audioCtx.resume();
     } catch {
-      /* ci gaba ba tare da sauti ba */
+      /* continue without audio */
     }
 
     const mimeType = [
@@ -136,13 +137,17 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
 
     recorder.start(1000);
     let stopped = false;
+    let endedNaturally = false;
     const finish = () => {
       if (stopped) return;
       stopped = true;
       recorder.stop();
     };
-    video.onended = finish;
-    // Kariya: idan wani abu ya tsaya, a dakatar bayan lokaci mai ma'ana
+    video.onended = () => {
+      endedNaturally = true;
+      finish();
+    };
+    // Safety net: if something stalls, stop after a reasonable time
     const timeout = setTimeout(finish, (video.duration * 1.5 + 10) * 1000);
 
     const draw = () => {
@@ -159,6 +164,10 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
     clearTimeout(timeout);
     audioCtx?.close();
 
+    // The recording was cut short (e.g. the app went to the background),
+    // so keep the original file instead of uploading a truncated video.
+    if (!endedNaturally) return file;
+
     const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
     if (blob.size === 0 || blob.size >= file.size) return file;
 
@@ -169,4 +178,4 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
   } finally {
     URL.revokeObjectURL(url);
   }
-}
+    }
