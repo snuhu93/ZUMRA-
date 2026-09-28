@@ -14,6 +14,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false,
       includeAssets: ['apple-touch-icon.png', 'icon-192.png', 'icon-512-1.png'],
       manifest: {
         name: 'ZUMRA',
@@ -30,14 +31,17 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
         runtimeCaching: [
-          // Bidiyo: bar shi ya tafi kai tsaye ta network, kar service worker ta taba shi
-          // (bidiyo yana bukatar "range requests" wanda CacheFirst ba ta goyon baya sosai)
+          // Bidiyo: kai tsaye ta network
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*\.(mp4|webm|mov|m4v)$/,
             handler: 'NetworkOnly'
           },
-          // Sauran media (hotuna, audio, da sauransu): CacheFirst kamar yadda yake
+          // Sauran media: CacheFirst
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/,
             handler: 'CacheFirst',
@@ -66,4 +70,3 @@ export default defineConfig({
     port: 5173
   }
 });
-
