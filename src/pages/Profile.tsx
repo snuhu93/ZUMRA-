@@ -155,6 +155,9 @@ export default function ProfilePage() {
   if (loading) return <SkeletonPost />;
   if (!profile) return <p className="p-6 text-center text-sm text-gray-500">Profile not found.</p>;
 
+  // Official admin accounts do not accept friend requests or follows
+  const canFriendOrFollow = !profile.is_admin;
+
   const friendLabel = relationship.isFriend
     ? 'Friends ✓'
     : relationship.requestSentId
@@ -202,10 +205,14 @@ export default function ProfilePage() {
             <button onClick={() => navigate('/profile/edit')} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">Edit Profile</button>
           ) : (
             <>
-              <button onClick={handleFriendAction} disabled={busy} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{friendLabel}</button>
-              <button onClick={handleFollow} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">
-                {relationship.isFollowing ? 'Following' : 'Follow'}
-              </button>
+              {canFriendOrFollow && (
+                <>
+                  <button onClick={handleFriendAction} disabled={busy} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{friendLabel}</button>
+                  <button onClick={handleFollow} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">
+                    {relationship.isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </>
+              )}
               <button type="button" onClick={handleMessage} disabled={messageBusy} className="relative z-10 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700 disabled:opacity-60">
                 {messageBusy ? '...' : 'Message'}
               </button>
@@ -321,4 +328,4 @@ export default function ProfilePage() {
       )}
     </div>
   );
-                                        }
+    }
