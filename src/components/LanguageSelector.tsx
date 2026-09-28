@@ -1,13 +1,12 @@
-import { LANGUAGES, getLanguage, setLanguage, type Lang } from '../i18n';
+import { LANGUAGES, setLanguage, useLang, type Lang } from '@/i18n';
 
 export default function LanguageSelector() {
+  const lang = useLang();
   return (
     <select
-      defaultValue={getLanguage()}
-      onChange={(e) => {
-        setLanguage(e.target.value as Lang);
-        window.location.reload();
-      }}
+      value={lang}
+      onChange={(e) => setLanguage(e.target.value as Lang)}
+      className="rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
     >
       {(Object.keys(LANGUAGES) as Lang[]).map((code) => (
         <option key={code} value={code}>
@@ -16,4 +15,4 @@ export default function LanguageSelector() {
       ))}
     </select>
   );
-      }
+}
