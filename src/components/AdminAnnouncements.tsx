@@ -29,7 +29,7 @@ export default function AdminAnnouncements() {
         onChange={(e) => setMessage(e.target.value)}
         rows={4}
         placeholder="Write your announcement here..."
-        className="w-full rounded-lg border border-gray-200 bg-white p-3 text-sm"
+        className="w-full rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-900 placeholder-gray-400"
       />
       <button
         onClick={handleSend}
@@ -41,4 +41,4 @@ export default function AdminAnnouncements() {
       {sent && <p className="mt-2 text-xs text-green-500">Announcement sent successfully.</p>}
     </div>
   );
-                                    }
+      }
