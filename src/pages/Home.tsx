@@ -6,6 +6,7 @@ import PostCard from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import StatusBar from '@/components/StatusBar';
 import Avatar from '@/components/Avatar';
+import WelcomeModal from '@/components/WelcomeModal';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Image as ImageIcon } from 'lucide-react';
 
@@ -91,6 +92,8 @@ export default function Home() {
 
   return (
     <div>
+      <WelcomeModal />
+
       <StatusBar />
 
       <CreatePostBar />
@@ -123,4 +126,4 @@ export default function Home() {
       {loadingMore && <SkeletonPost />}
     </div>
   );
-          }
+        }
