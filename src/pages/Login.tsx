@@ -1,14 +1,19 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Where the user was trying to go before being sent to login (e.g. a shared post link)
+  const fromState = (location.state as { from?: string } | null)?.from;
+  const from = fromState && fromState.startsWith('/') && !fromState.startsWith('//') ? fromState : '/';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -20,7 +25,7 @@ export default function Login() {
       setError(signInError);
       return;
     }
-    navigate('/');
+    navigate(from, { replace: true });
   };
 
   return (
@@ -62,9 +67,9 @@ export default function Login() {
         </button>
         <div className="flex justify-between text-xs">
           <Link to="/forgot-password" className="text-zumra-600 dark:text-zumra-400">Forgot password?</Link>
-          <Link to="/register" className="text-zumra-600 dark:text-zumra-400">Create account</Link>
+          <Link to="/register" state={location.state} className="text-zumra-600 dark:text-zumra-400">Create account</Link>
         </div>
       </form>
     </div>
   );
-}
+                     }
