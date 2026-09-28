@@ -8,7 +8,7 @@ import { registerSW } from 'virtual:pwa-register';
 // ba tare da users sun yi komai ba.
 registerSW({
   immediate: true,
-  onRegisteredSW(_url, reg) {
+  onRegistered(reg) {
     if (!reg) return;
     setInterval(() => reg.update(), 60 * 1000);
   }
