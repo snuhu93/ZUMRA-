@@ -54,14 +54,32 @@ export default function CreatePost() {
       const uploaded: { path: string; type: 'image' | 'video'; thumbnailPath?: string }[] = [];
       for (let i = 0; i < media.length; i++) {
         const m = media[i];
-        setProgress(`Uploading ${i + 1} of ${media.length}...`);
+        const prefix = media.length > 1 ? `${m.type === 'video' ? 'Video' : 'Photo'} ${i + 1} of ${media.length}: ` : '';
+
         if (m.type === 'image') {
+          setProgress(`${prefix}Uploading photo...`);
           const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
           uploaded.push({ path, type: 'image' });
         } else {
-          const { path } = await uploadVideo({ file: m.file, userId: user.id, dataSaver });
+          let currentStatus = 'Preparing video...';
+          setProgress(`${prefix}${currentStatus}`);
+
+          const { path } = await uploadVideo({
+            file: m.file,
+            userId: user.id,
+            dataSaver,
+            onStatus: (text) => {
+              currentStatus = text;
+              setProgress(`${prefix}${text}`);
+            },
+            onProgress: (percent) => {
+              setProgress(`${prefix}${currentStatus} ${Math.round(percent)}%`);
+            },
+          });
+
           let thumbnailPath: string | undefined;
           try {
+            setProgress(`${prefix}Creating thumbnail...`);
             const thumbFile = await generateVideoThumbnail(m.file);
             const { path: thumbPath } = await uploadImage({
               file: thumbFile,
@@ -118,7 +136,8 @@ export default function CreatePost() {
               )}
               <button
                 onClick={() => removeMedia(i)}
-                className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white"
+                disabled={uploading}
+                className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white disabled:opacity-50"
                 aria-label="Remove"
               >
                 ×
@@ -131,11 +150,11 @@ export default function CreatePost() {
       <div className="mt-3 flex gap-3 text-sm">
         <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
           🖼️ Photo
-          <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e, 'image')} />
+          <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e, 'image')} disabled={uploading} />
         </label>
         <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
           🎬 Video
-          <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFiles(e, 'video')} />
+          <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFiles(e, 'video')} disabled={uploading} />
         </label>
       </div>
 
@@ -152,13 +171,19 @@ export default function CreatePost() {
         </select>
       </div>
 
+      {uploading && progress && (
+        <p className="mt-4 rounded-lg bg-gray-100 p-3 text-center text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+          {progress}
+        </p>
+      )}
+
       <button
         onClick={handleSubmit}
         disabled={uploading}
         className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {uploading ? progress || 'Uploading...' : 'Post'}
+        {uploading ? 'Please wait...' : 'Post'}
       </button>
     </div>
   );
-    }
+        }
