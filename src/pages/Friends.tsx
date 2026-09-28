@@ -9,6 +9,8 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
   sendFriendRequest,
+  cancelFriendRequest,
+  getRelationshipStatus,
   type PublicProfileLite
 } from '@/services/friends';
 
@@ -20,6 +22,8 @@ export default function Friends() {
   const [requests, setRequests] = useState<any[]>([]);
   const [friends, setFriends] = useState<PublicProfileLite[]>([]);
   const [suggested, setSuggested] = useState<PublicProfileLite[]>([]);
+  // userId -> id na friend request da aka aika masa
+  const [sentMap, setSentMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -34,7 +38,25 @@ export default function Friends() {
       setRequests(reqs);
       setFriends(fr);
       const excludeIds = [...fr.map((f) => f.id), ...reqs.map((r: any) => r.sender.id)];
-      setSuggested(await fetchSuggestedFriends(user.id, excludeIds));
+      const sug = await fetchSuggestedFriends(user.id, excludeIds);
+      setSuggested(sug);
+
+      // Gano waɗanda aka riga aka aika musu request, don su nuna "Request Sent"
+      const rels = await Promise.all(
+        sug.map(async (s) => {
+          try {
+            const rel = await getRelationshipStatus(user.id, s.id);
+            return [s.id, rel.requestSentId] as const;
+          } catch {
+            return [s.id, null] as const;
+          }
+        })
+      );
+      const map: Record<string, string> = {};
+      for (const [id, reqId] of rels) {
+        if (reqId) map[id] = reqId;
+      }
+      setSentMap(map);
     } catch (err) {
       console.error('Friends load error:', err);
     } finally {
@@ -77,10 +99,32 @@ export default function Friends() {
     try {
       setPendingId(id);
       await sendFriendRequest(user.id, id);
-      load();
+      const rel = await getRelationshipStatus(user.id, id);
+      if (rel.requestSentId) {
+        setSentMap((m) => ({ ...m, [id]: rel.requestSentId as string }));
+      }
     } catch (err) {
       console.error('Add friend error:', err);
       alert('An kasa aika friend request: ' + (err as Error).message);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    const requestId = sentMap[id];
+    if (!requestId) return;
+    try {
+      setPendingId(id);
+      await cancelFriendRequest(requestId);
+      setSentMap((m) => {
+        const next = { ...m };
+        delete next[id];
+        return next;
+      });
+    } catch (err) {
+      console.error('Cancel friend request error:', err);
+      alert('An kasa soke request: ' + (err as Error).message);
     } finally {
       setPendingId(null);
     }
@@ -163,23 +207,30 @@ export default function Friends() {
           {suggested.length === 0 && (
             <p className="p-10 text-center text-sm text-gray-500">No suggestions right now.</p>
           )}
-          {suggested.map((s) => (
-            <div key={s.id} className="flex items-center justify-between p-4">
-              <Link to={`/profile/${s.username}`} className="flex items-center gap-3">
-                <Avatar src={s.avatar_url} name={s.full_name} />
-                <span className="text-sm font-medium">{s.full_name}</span>
-              </Link>
-              <button
-                disabled={pendingId === s.id}
-                onClick={() => handleAdd(s.id)}
-                className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                {pendingId === s.id ? '...' : 'Add Friend'}
-              </button>
-            </div>
-          ))}
+          {suggested.map((s) => {
+            const sent = !!sentMap[s.id];
+            return (
+              <div key={s.id} className="flex items-center justify-between p-4">
+                <Link to={`/profile/${s.username}`} className="flex items-center gap-3">
+                  <Avatar src={s.avatar_url} name={s.full_name} />
+                  <span className="text-sm font-medium">{s.full_name}</span>
+                </Link>
+                <button
+                  disabled={pendingId === s.id}
+                  onClick={() => (sent ? handleCancel(s.id) : handleAdd(s.id))}
+                  className={
+                    sent
+                      ? 'rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold dark:border-gray-700 disabled:opacity-50'
+                      : 'rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50'
+                  }
+                >
+                  {pendingId === s.id ? '...' : sent ? 'Request Sent' : 'Add Friend'}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
-    }
+        }
