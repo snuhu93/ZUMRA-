@@ -3,6 +3,18 @@ import { compressImage, compressVideo, isVideoTooLarge } from '@/utils/mediaOpti
 
 type Bucket = 'avatars' | 'covers' | 'post-images' | 'post-videos' | 'message-media';
 
+const MAX_UPLOAD_ATTEMPTS = 3;
+const RETRY_DELAYS_MS = [2000, 4000];
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Network failures and server-side errors are worth retrying; permission/validation errors are not. */
+function isRetryable(err: any): boolean {
+  const status = Number(err?.statusCode ?? err?.status);
+  if (status) return status >= 500 || status === 408 || status === 429;
+  return true; // no HTTP status usually means the request never reached the server
+}
+
 /** Every object is stored under {userId}/... so storage RLS policies can enforce ownership. */
 function buildPath(userId: string, fileName: string, prefix?: string) {
   const ext = fileName.split('.').pop() || 'bin';
@@ -34,31 +46,61 @@ export async function uploadImage(params: {
 export async function uploadVideo(params: {
   file: File;
   userId: string;
-  dataSaver: boolean;onProgress?: (percent: number) => void;
+  dataSaver: boolean;
+  onProgress?: (percent: number) => void;
+  onStatus?: (text: string) => void;
 }): Promise<{ path: string; publicUrl: string }> {
   if (params.file.size / (1024 * 1024) > 150) {
     throw new Error('Video is too large. Please choose a file under 150MB.');
   }
+
+  params.onStatus?.('Compressing video...');
   const file = await compressVideo(params.file, {
     dataSaver: params.dataSaver,
     onProgress: params.onProgress,
-  });if (isVideoTooLarge(file, params.dataSaver)) {
+  });
+
+  if (isVideoTooLarge(file, params.dataSaver)) {
     throw new Error(
       params.dataSaver
         ? 'Video is too large for Data Saver mode (max 25MB). Turn off Data Saver or choose a shorter clip.'
         : 'Video is too large. Please choose a file under 50MB.'
     );
   }
-  const path = buildPath(params.userId, file.name);
-  const { error } = await supabase.storage.from('post-videos').upload(path, file, {
-    cacheControl: '31536000',
-    upsert: false,
-    contentType: file.type || 'video/mp4'
-  });
-  if (error) throw error;
-  const { data } = supabase.storage.from('post-videos').getPublicUrl(path);
-  return { path, publicUrl: data.publicUrl };
-          }
+
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
+    // A fresh path per attempt avoids "already exists" conflicts if a previous try half-succeeded
+    const path = buildPath(params.userId, file.name);
+
+    params.onStatus?.(
+      attempt === 1
+        ? 'Uploading video...'
+        : `Connection problem. Retrying (${attempt} of ${MAX_UPLOAD_ATTEMPTS})...`
+    );
+
+    const { error } = await supabase.storage.from('post-videos').upload(path, file, {
+      cacheControl: '31536000',
+      upsert: false,
+      contentType: file.type || 'video/mp4'
+    });
+
+    if (!error) {
+      const { data } = supabase.storage.from('post-videos').getPublicUrl(path);
+      return { path, publicUrl: data.publicUrl };
+    }
+
+    lastError = error;
+    if (attempt === MAX_UPLOAD_ATTEMPTS || !isRetryable(error)) break;
+    await sleep(RETRY_DELAYS_MS[attempt - 1]);
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Video upload failed. Please check your connection and try again.');
+}
+
 export function generateVideoThumbnail(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -97,7 +139,8 @@ export function generateVideoThumbnail(file: File): Promise<File> {
       reject(new Error('Could not load video for thumbnail'));
     };
   });
-                         }
+}
+
 export async function uploadMessageMedia(params: { file: File; userId: string; conversationId: string; dataSaver: boolean }) {
   const isImage = params.file.type.startsWith('image/');
   const path = `${params.conversationId}/${params.userId}/${Date.now()}-${params.file.name}`;
@@ -116,5 +159,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-  }
-    
+                                                }
