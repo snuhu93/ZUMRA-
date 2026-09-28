@@ -4,9 +4,15 @@ import App from './App';
 import "./styles/index.css";
 import { registerSW } from 'virtual:pwa-register';
 
-// Auto-updates the app in the background by checking for a new
-// version and applying it without requiring any user action.
-registerSW({ immediate: true });
+// Yana duba sabon version kowane minti, yana kuma amfani da shi kai tsaye
+// ba tare da users sun yi komai ba.
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    if (!reg) return;
+    setInterval(() => reg.update(), 60 * 1000);
+  }
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
