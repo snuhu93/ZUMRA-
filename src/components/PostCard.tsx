@@ -20,7 +20,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-// Sabon component: video wanda ke play/pause kansa yayin scrolling
+// New component: a video that plays/pauses itself while scrolling
 function FeedVideoPreview({
   src,
   thumbnail,
@@ -72,7 +72,7 @@ function FeedVideoPreview({
   );
 }
 
-// Sabon component: fullscreen image viewer mai swipe tsakanin hotuna (ana amfani da shi a PostCard da ProfilePage)
+// New component: fullscreen image viewer with swipe between photos (used in PostCard and ProfilePage)
 export function ImageLightbox({
   images,
   startIndex,
