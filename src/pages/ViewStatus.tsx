@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchActiveStatuses, deleteStatus, type StatusRow } from '@/services/status';
 import { getPublicUrl } from '@/services/storage';
+import { useT } from '@/i18n';
 
 export default function ViewStatus() {
+  const t = useT();
   const { authorId } = useParams<{ authorId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ export default function ViewStatus() {
     return () => clearTimeout(timer);
   }, [index, statuses, navigate]);
 
-  if (!statuses.length) return <p className="p-6 text-center text-sm text-gray-500">No active status.</p>;
+  if (!statuses.length) return <p className="p-6 text-center text-sm text-gray-500">{t('status.none')}</p>;
   const current = statuses[index];
   const isOwner = user?.id === current.author_id;
 
@@ -43,7 +45,7 @@ export default function ViewStatus() {
       <div className="flex items-center justify-between px-3 py-1">
         <p className="text-sm font-semibold">{current.author?.full_name}</p>
         <div className="flex items-center gap-3">
-          {isOwner && <button onClick={handleDelete} className="text-xs">Delete</button>}
+          {isOwner && <button onClick={handleDelete} className="text-xs">{t('delete')}</button>}
           <button onClick={() => navigate('/')} className="text-lg">✕</button>
         </div>
       </div>
