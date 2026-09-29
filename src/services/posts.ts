@@ -9,6 +9,7 @@ export interface FeedPost {
   content: string | null;
   privacy: PrivacyLevel;
   shared_post_id: string | null;
+  background_color: string | null;
   like_count: number;
   comment_count: number;
   share_count: number;
@@ -24,7 +25,7 @@ export async function fetchFeed(cursor: string | null, userId: string | null): P
   let query = supabase
     .from('posts')
     .select(`
-      id, author_id, content, privacy, shared_post_id, like_count, comment_count, share_count, created_at,
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
       author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
@@ -61,7 +62,7 @@ export async function fetchVideoFeed(cursor: string | null, userId: string | nul
   let query = supabase
     .from('posts')
     .select(`
-      id, author_id, content, privacy, shared_post_id, like_count, comment_count, share_count, created_at,
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
       author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
       post_media!inner(id, media_type, storage_path, thumbnail_path, position)
     `)
@@ -98,7 +99,7 @@ export async function fetchPostById(postId: string, userId: string | null): Prom
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, author_id, content, privacy, shared_post_id, like_count, comment_count, share_count, created_at,
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
       author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
@@ -124,7 +125,7 @@ export async function fetchProfilePosts(authorId: string, cursor: string | null)
   let query = supabase
     .from('posts')
     .select(`
-      id, author_id, content, privacy, shared_post_id, like_count, comment_count, share_count, created_at,
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
       author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
@@ -144,11 +145,17 @@ export async function createPost(params: {
   authorId: string;
   content: string;
   privacy: PrivacyLevel;
+  backgroundColor?: string | null;
   media: { path: string; type: 'image' | 'video'; thumbnailPath?: string | null }[];
 }) {
   const { data: post, error } = await supabase
     .from('posts')
-    .insert({ author_id: params.authorId, content: params.content, privacy: params.privacy })
+    .insert({
+      author_id: params.authorId,
+      content: params.content,
+      privacy: params.privacy,
+      background_color: params.backgroundColor ?? null
+    })
     .select('id')
     .single();
   if (error) throw error;
@@ -223,4 +230,4 @@ export async function sharePost(originalPostId: string, userId: string, comment:
     await supabase.from('notifications').insert({ recipient_id: original.author_id, actor_id: userId, type: 'post_share', entity_id: originalPostId });
   }
   return post.id as string;
-    }
+      }
