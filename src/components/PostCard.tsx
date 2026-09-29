@@ -232,6 +232,9 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const imageMedia = sortedMedia.filter((m) => m.media_type === 'image');
   const imageUrls = imageMedia.map((m) => optimizedImageUrl(getPublicUrl('post-images', m.storage_path) ?? '', imageWidth));
 
+  // Colored text-only post (like a status)
+  const isColoredPost = !!post.background_color && !!post.content && sortedMedia.length === 0;
+
   return (
     <article className="mb-2 bg-white p-4 dark:bg-gray-900">
       <div className="flex items-start justify-between">
@@ -264,7 +267,16 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
         </div>
       </div>
 
-      {post.content && <p className="mt-3 whitespace-pre-wrap text-sm">{post.content}</p>}
+      {isColoredPost ? (
+        <div
+          className="mt-3 flex min-h-[14rem] items-center justify-center rounded-xl p-6"
+          style={{ backgroundColor: post.background_color ?? undefined }}
+        >
+          <p className="whitespace-pre-wrap break-words text-center text-xl font-bold text-white">{post.content}</p>
+        </div>
+      ) : (
+        post.content && <p className="mt-3 whitespace-pre-wrap text-sm">{post.content}</p>
+      )}
 
       {sortedMedia.length > 0 && (
         <div className={`mt-3 grid gap-1 ${sortedMedia.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -411,4 +423,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-}
+    }
