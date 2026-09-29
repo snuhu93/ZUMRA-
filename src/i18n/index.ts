@@ -55,7 +55,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'Uploading photo...', preparing_video: 'Preparing video...',
     creating_thumbnail: 'Creating thumbnail...',
     who_can_see: 'Who can see this?', public: 'Public', only_me: 'Only Me',
-    please_wait: 'Please wait...', post: 'Post'
+    please_wait: 'Please wait...', post: 'Post',
+    search_conversations: 'Search conversations...', say_hello: 'Say hello 👋', unknown_user: 'Unknown'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -98,7 +99,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'Ana ɗora hoto...', preparing_video: 'Ana shirya bidiyo...',
     creating_thumbnail: 'Ana ƙirƙirar ƙaramin hoto...',
     who_can_see: 'Su wa za su iya ganin wannan?', public: 'Kowa', only_me: 'Ni kaɗai',
-    please_wait: 'Da fatan a jira...', post: 'Wallafa'
+    please_wait: 'Da fatan a jira...', post: 'Wallafa',
+    search_conversations: 'Nemi hirarraki...', say_hello: 'Ka gaisa 👋', unknown_user: 'Ba a sani ba'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -141,7 +143,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'Envoi de la photo...', preparing_video: 'Préparation de la vidéo...',
     creating_thumbnail: 'Création de la miniature...',
     who_can_see: 'Qui peut voir ceci ?', public: 'Public', only_me: 'Moi uniquement',
-    please_wait: 'Veuillez patienter...', post: 'Publier'
+    please_wait: 'Veuillez patienter...', post: 'Publier',
+    search_conversations: 'Rechercher des conversations...', say_hello: 'Dites bonjour 👋', unknown_user: 'Inconnu'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -184,7 +187,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'جارٍ رفع الصورة...', preparing_video: 'جارٍ تجهيز الفيديو...',
     creating_thumbnail: 'جارٍ إنشاء الصورة المصغرة...',
     who_can_see: 'من يمكنه رؤية هذا؟', public: 'عام', only_me: 'أنا فقط',
-    please_wait: 'يرجى الانتظار...', post: 'نشر'
+    please_wait: 'يرجى الانتظار...', post: 'نشر',
+    search_conversations: 'ابحث في المحادثات...', say_hello: 'قل مرحبًا 👋', unknown_user: 'غير معروف'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -227,7 +231,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'Ń gbé fọ́tò sókè...', preparing_video: 'Ń múra fídíò sílẹ̀...',
     creating_thumbnail: 'Ń ṣẹ̀dá àwòrán kékeré...',
     who_can_see: 'Ta ni ó lè rí èyí?', public: 'Gbogbo ènìyàn', only_me: 'Èmi nìkan',
-    please_wait: 'Jọ̀wọ́ dúró...', post: 'Fìwéránṣẹ́'
+    please_wait: 'Jọ̀wọ́ dúró...', post: 'Fìwéránṣẹ́',
+    search_conversations: 'Wá àwọn ìjíròrò...', say_hello: 'Sọ pé báwo 👋', unknown_user: 'Aláìmọ̀'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -270,7 +275,8 @@ const translations: Record<Lang, Record<string, string>> = {
     uploading_photo: 'Na-ebu foto...', preparing_video: 'Na-akwadebe vidiyo...',
     creating_thumbnail: 'Na-emepụta obere foto...',
     who_can_see: 'Ònye pụrụ ịhụ nke a?', public: 'Onye ọ bụla', only_me: 'Naanị m',
-    please_wait: 'Biko chere...', post: 'Bipụta'
+    please_wait: 'Biko chere...', post: 'Bipụta',
+    search_conversations: 'Chọọ mkparịta ụka...', say_hello: 'Kelee ya 👋', unknown_user: 'Amaghị'
   }
 };
 
@@ -319,4 +325,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-      }
+    }
