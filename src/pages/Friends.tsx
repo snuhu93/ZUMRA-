@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useT } from '@/i18n';
 import {
   fetchIncomingRequests,
   fetchFriends,
@@ -17,12 +18,13 @@ import {
 type Tab = 'requests' | 'friends' | 'suggested';
 
 export default function Friends() {
+  const t = useT();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('requests');
   const [requests, setRequests] = useState<any[]>([]);
   const [friends, setFriends] = useState<PublicProfileLite[]>([]);
   const [suggested, setSuggested] = useState<PublicProfileLite[]>([]);
-  // userId -> id na friend request da aka aika masa
+  // userId -> id of the friend request that was sent to them
   const [sentMap, setSentMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function Friends() {
       const sug = await fetchSuggestedFriends(user.id, excludeIds);
       setSuggested(sug);
 
-      // Gano waɗanda aka riga aka aika musu request, don su nuna "Request Sent"
+      // Find who already has a pending request, so we can show "Request Sent"
       const rels = await Promise.all(
         sug.map(async (s) => {
           try {
@@ -75,7 +77,7 @@ export default function Friends() {
       load();
     } catch (err) {
       console.error('Accept friend error:', err);
-      alert('An kasa amincewa da buƙatar: ' + (err as Error).message);
+      alert(t('friends.acceptFailed') + (err as Error).message);
     } finally {
       setPendingId(null);
     }
@@ -88,7 +90,7 @@ export default function Friends() {
       load();
     } catch (err) {
       console.error('Reject friend error:', err);
-      alert('An kasa ƙin buƙatar: ' + (err as Error).message);
+      alert(t('friends.rejectFailed') + (err as Error).message);
     } finally {
       setPendingId(null);
     }
@@ -105,7 +107,7 @@ export default function Friends() {
       }
     } catch (err) {
       console.error('Add friend error:', err);
-      alert('An kasa aika friend request: ' + (err as Error).message);
+      alert(t('friends.addFailed') + (err as Error).message);
     } finally {
       setPendingId(null);
     }
@@ -124,7 +126,7 @@ export default function Friends() {
       });
     } catch (err) {
       console.error('Cancel friend request error:', err);
-      alert('An kasa soke request: ' + (err as Error).message);
+      alert(t('friends.cancelFailed') + (err as Error).message);
     } finally {
       setPendingId(null);
     }
@@ -133,32 +135,32 @@ export default function Friends() {
   return (
     <div>
       <div className="flex border-b border-gray-200 dark:border-gray-800">
-        {(['requests', 'friends', 'suggested'] as Tab[]).map((t) => (
+        {(['requests', 'friends', 'suggested'] as Tab[]).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tb}
+            onClick={() => setTab(tb)}
             className={`flex-1 py-3 text-sm font-medium capitalize ${
-              tab === t
+              tab === tb
                 ? 'border-b-2 border-zumra-500 text-zumra-600'
                 : 'text-gray-500'
             }`}
           >
-            {t === 'requests'
-              ? `Requests${requests.length ? ` (${requests.length})` : ''}`
-              : t}
+            {tb === 'requests'
+              ? `${t('requests')}${requests.length ? ` (${requests.length})` : ''}`
+              : t(tb)}
           </button>
         ))}
       </div>
 
       {loading && (
-        <p className="p-6 text-center text-sm text-gray-500">Loading...</p>
+        <p className="p-6 text-center text-sm text-gray-500">{t('loading')}</p>
       )}
 
       {!loading && tab === 'requests' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {requests.length === 0 && (
             <p className="p-10 text-center text-sm text-gray-500">
-              You don't have any friend requests.
+              {t('no_friend_requests')}
             </p>
           )}
           {requests.map((r) => (
@@ -173,14 +175,14 @@ export default function Friends() {
                   onClick={() => handleAccept(r.id)}
                   className="rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                 >
-                  {pendingId === r.id ? '...' : 'Accept'}
+                  {pendingId === r.id ? '...' : t('accept')}
                 </button>
                 <button
                   disabled={pendingId === r.id}
                   onClick={() => handleReject(r.id)}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs dark:border-gray-700 disabled:opacity-50"
                 >
-                  Reject
+                  {t('reject')}
                 </button>
               </div>
             </div>
@@ -191,7 +193,7 @@ export default function Friends() {
       {!loading && tab === 'friends' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {friends.length === 0 && (
-            <p className="p-10 text-center text-sm text-gray-500">No friends yet.</p>
+            <p className="p-10 text-center text-sm text-gray-500">{t('no_friends_yet')}</p>
           )}
           {friends.map((f) => (
             <Link key={f.id} to={`/profile/${f.username}`} className="flex items-center gap-3 p-4">
@@ -205,7 +207,7 @@ export default function Friends() {
       {!loading && tab === 'suggested' && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {suggested.length === 0 && (
-            <p className="p-10 text-center text-sm text-gray-500">No suggestions right now.</p>
+            <p className="p-10 text-center text-sm text-gray-500">{t('no_suggestions')}</p>
           )}
           {suggested.map((s) => {
             const sent = !!sentMap[s.id];
@@ -224,7 +226,7 @@ export default function Friends() {
                       : 'rounded-lg bg-zumra-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50'
                   }
                 >
-                  {pendingId === s.id ? '...' : sent ? 'Request Sent' : 'Add Friend'}
+                  {pendingId === s.id ? '...' : sent ? t('request_sent') : t('add_friend')}
                 </button>
               </div>
             );
@@ -233,4 +235,4 @@ export default function Friends() {
       )}
     </div>
   );
-        }
+    }
