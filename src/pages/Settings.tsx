@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
+import { useI18n } from '@/i18n';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -44,6 +45,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function Settings() {
+  const { t } = useI18n();
   const { user, signOut, updatePassword } = useAuth();
   const { dataSaver, setDataSaver, autoplayVideos, setAutoplayVideos, theme, setTheme } = useSettings();
   const navigate = useNavigate();
@@ -56,11 +58,11 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (newPassword.length < 8) {
-      setMessage('Password must be at least 8 characters.');
+      setMessage(t('settings.passwordTooShort'));
       return;
     }
     const { error } = await updatePassword(newPassword);
-    setMessage(error ?? 'Password updated.');
+    setMessage(error ?? t('settings.passwordUpdated'));
     if (!error) {
       setShowPasswordForm(false);
       setNewPassword('');
@@ -77,7 +79,7 @@ export default function Settings() {
     const { error } = await supabase.functions.invoke('super-processor');
     setDeleting(false);
     if (error) {
-      setMessage('Something went wrong deleting your account. Please try again.');
+      setMessage(t('settings.deleteError'));
       setConfirmDelete(false);
       return;
     }
@@ -89,82 +91,82 @@ export default function Settings() {
     <div className="pb-6">
       {message && <p className="m-4 rounded-md bg-zumra-50 p-2 text-sm text-zumra-700 dark:bg-zumra-900/30 dark:text-zumra-300">{message}</p>}
 
-      <Section title="Account">
-        <Row label="Edit Profile" onClick={() => navigate('/profile/edit')} right={<span>›</span>} />
-        <Row label="Change Password" onClick={() => setShowPasswordForm((v) => !v)} right={<span>›</span>} />
+      <Section title={t('settings.account')}>
+        <Row label={t('settings.editProfile')} onClick={() => navigate('/profile/edit')} right={<span>›</span>} />
+        <Row label={t('settings.changePassword')} onClick={() => setShowPasswordForm((v) => !v)} right={<span>›</span>} />
         {showPasswordForm && (
           <div className="flex gap-2 px-4 py-3">
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="New password"
+              placeholder={t('settings.newPassword')}
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
             />
-            <button onClick={handleChangePassword} className="rounded-lg bg-zumra-500 px-3 py-2 text-xs font-semibold text-white">Update</button>
+            <button onClick={handleChangePassword} className="rounded-lg bg-zumra-500 px-3 py-2 text-xs font-semibold text-white">{t('settings.update')}</button>
           </div>
         )}
-        <Row label="Delete Account" onClick={() => setConfirmDelete(true)} right={<span className="text-red-600">›</span>} />
+        <Row label={t('settings.deleteAccount')} onClick={() => setConfirmDelete(true)} right={<span className="text-red-600">›</span>} />
       </Section>
 
-      <Section title="Privacy">
+      <Section title={t('settings.privacy')}>
         <div className="flex w-full items-center justify-between px-4 py-3 text-sm">
-  <div>
-    <span>Who can see my posts</span>
-    <p className="mt-0.5 text-xs text-gray-400">Choose this when creating each post</p>
-  </div>
-  <span className="text-xs text-gray-400 dark:text-gray-500">Set per post</span>
-</div>
-        <Row label="Who can send friend requests" right={<span className="text-xs text-gray-400">Everyone</span>} />
-        <Row label="Who can message me" right={<span className="text-xs text-gray-400">Everyone</span>} />
-        <Row label="Blocked Users" onClick={() => navigate('/settings/blocked')} right={<span>›</span>} />
+          <div>
+            <span>{t('settings.whoSeesPosts')}</span>
+            <p className="mt-0.5 text-xs text-gray-400">{t('settings.choosePerPost')}</p>
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{t('settings.setPerPost')}</span>
+        </div>
+        <Row label={t('settings.whoFriendRequests')} right={<span className="text-xs text-gray-400">{t('settings.everyone')}</span>} />
+        <Row label={t('settings.whoMessages')} right={<span className="text-xs text-gray-400">{t('settings.everyone')}</span>} />
+        <Row label={t('settings.blockedUsers')} onClick={() => navigate('/settings/blocked')} right={<span>›</span>} />
       </Section>
 
-      <Section title="Notifications">
-        <Row label="Likes, Comments, Friend requests, Messages, Followers" right={<span className="text-xs text-gray-400">On</span>} />
+      <Section title={t('settings.notifications')}>
+        <Row label={t('settings.notificationsAll')} right={<span className="text-xs text-gray-400">{t('settings.on')}</span>} />
       </Section>
 
-      <Section title="Data">
-        <Row label="Data Saver" right={<Toggle checked={dataSaver} onChange={setDataSaver} />} />
-        <Row label="Media Quality" right={<span className="text-xs text-gray-400">{dataSaver ? 'Reduced' : 'High'}</span>} />
-        <Row label="Autoplay Videos" right={<Toggle checked={autoplayVideos} onChange={setAutoplayVideos} />} />
+      <Section title={t('settings.data')}>
+        <Row label={t('settings.dataSaver')} right={<Toggle checked={dataSaver} onChange={setDataSaver} />} />
+        <Row label={t('settings.mediaQuality')} right={<span className="text-xs text-gray-400">{dataSaver ? t('settings.reduced') : t('settings.high')}</span>} />
+        <Row label={t('settings.autoplayVideos')} right={<Toggle checked={autoplayVideos} onChange={setAutoplayVideos} />} />
       </Section>
 
-      <Section title="Appearance">
+      <Section title={t('settings.appearance')}>
         <div className="flex gap-2 px-4 py-3">
-          {(['light', 'dark', 'system'] as const).map((t) => (
+          {(['light', 'dark', 'system'] as const).map((th) => (
             <button
-              key={t}
-              onClick={() => setTheme(t)}
-              className={`flex-1 rounded-lg border py-2 text-xs font-medium capitalize ${theme === t ? 'border-zumra-500 bg-zumra-50 text-zumra-700 dark:bg-zumra-900/30' : 'border-gray-300 dark:border-gray-700'}`}
+              key={th}
+              onClick={() => setTheme(th)}
+              className={`flex-1 rounded-lg border py-2 text-xs font-medium capitalize ${theme === th ? 'border-zumra-500 bg-zumra-50 text-zumra-700 dark:bg-zumra-900/30' : 'border-gray-300 dark:border-gray-700'}`}
             >
-              {t}
+              {t(`settings.theme.${th}`)}
             </button>
           ))}
         </div>
       </Section>
 
-      <Section title="Security">
-        <Row label="Active Sessions" right={<span className="text-xs text-gray-400">This device</span>} />
-        <Row label="Logout" onClick={() => signOut().then(() => navigate('/login'))} right={<span>›</span>} />
+      <Section title={t('settings.security')}>
+        <Row label={t('settings.activeSessions')} right={<span className="text-xs text-gray-400">{t('settings.thisDevice')}</span>} />
+        <Row label={t('settings.logout')} onClick={() => signOut().then(() => navigate('/login'))} right={<span>›</span>} />
       </Section>
 
-      <Section title="About">
-        <Row label="About ZUMRA" onClick={() => navigate('/about')} right={<span>›</span>} />
-        <Row label="Terms" onClick={() => navigate('/about#terms')} right={<span>›</span>} />
-        <Row label="Privacy Policy" onClick={() => navigate('/about#privacy')} right={<span>›</span>} />
-        <Row label="Help" onClick={() => navigate('/about#help')} right={<span>›</span>} />
+      <Section title={t('settings.about')}>
+        <Row label={t('settings.aboutZumra')} onClick={() => navigate('/about')} right={<span>›</span>} />
+        <Row label={t('settings.terms')} onClick={() => navigate('/about#terms')} right={<span>›</span>} />
+        <Row label={t('settings.privacyPolicy')} onClick={() => navigate('/about#privacy')} right={<span>›</span>} />
+        <Row label={t('settings.help')} onClick={() => navigate('/about#help')} right={<span>›</span>} />
       </Section>
 
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 dark:bg-gray-900">
-            <h3 className="mb-2 text-sm font-bold">Delete your account?</h3>
-            <p className="mb-4 text-xs text-gray-500">This permanently deletes your account, posts, messages, and media. This cannot be undone.</p>
+            <h3 className="mb-2 text-sm font-bold">{t('settings.deleteTitle')}</h3>
+            <p className="mb-4 text-xs text-gray-500">{t('settings.deleteBody')}</p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="flex-1 rounded-lg border border-gray-300 py-2 text-sm dark:border-gray-700">Cancel</button>
+              <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="flex-1 rounded-lg border border-gray-300 py-2 text-sm dark:border-gray-700">{t('settings.cancel')}</button>
               <button onClick={handleDeleteAccount} disabled={deleting} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white disabled:opacity-60">
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? t('settings.deleting') : t('settings.delete')}
               </button>
             </div>
           </div>
