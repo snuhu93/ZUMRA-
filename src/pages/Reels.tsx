@@ -5,10 +5,10 @@ import { getPublicUrl } from '@/services/storage';
 import Avatar from '@/components/Avatar';
 import { Link } from 'react-router-dom';
 import { ThumbsUp, MessageCircle, Share2, Volume2, VolumeX } from 'lucide-react';
-import { useI18n } from '@/i18n';
+import { useT } from '@/i18n';
 
 export default function Reels() {
-  const { t } = useI18n();
+  const t = useT();
   const { user } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -170,4 +170,4 @@ export default function Reels() {
       {loading && <p className="p-4 text-center text-xs text-gray-400">{t('reels.loading')}</p>}
     </div>
   );
-                           }
+                                        }
