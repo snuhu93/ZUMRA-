@@ -13,6 +13,8 @@ interface PendingMedia {
   previewUrl: string;
 }
 
+const BG_COLORS = ['#0F9D58', '#1565C0', '#C2185B', '#6A1B9A', '#EF6C00'];
+
 export default function CreatePost() {
   const t = useT();
   const { user } = useAuth();
@@ -21,9 +23,13 @@ export default function CreatePost() {
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState<PrivacyLevel>('public');
   const [media, setMedia] = useState<PendingMedia[]>([]);
+  const [bgColor, setBgColor] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // A colored background only applies to text-only posts.
+  const activeColor = media.length === 0 ? bgColor : null;
 
   const handleFiles = (e: ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = Array.from(e.target.files ?? []);
@@ -105,6 +111,7 @@ export default function CreatePost() {
         authorId: user.id,
         content: content.trim(),
         privacy,
+        backgroundColor: activeColor,
         media: uploaded.map((u) => ({ path: u.path, type: u.type, thumbnailPath: u.thumbnailPath })),
       });
       navigate(`/post/${postId}`);
@@ -121,14 +128,50 @@ export default function CreatePost() {
       <h1 className="mb-4 text-lg font-bold">{t('create_post')}</h1>
       {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">{error}</p>}
 
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={t('whats_on_your_mind')}
-        rows={5}
-        maxLength={5000}
-        className="w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm dark:border-gray-700 dark:bg-gray-900"
-      />
+      {activeColor ? (
+        <div
+          className="flex min-h-[14rem] items-center justify-center rounded-xl p-4"
+          style={{ backgroundColor: activeColor }}
+        >
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={t('whats_on_your_mind')}
+            rows={4}
+            maxLength={5000}
+            className="w-full resize-none bg-transparent text-center text-xl font-bold text-white outline-none placeholder:text-white/70"
+          />
+        </div>
+      ) : (
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={t('whats_on_your_mind')}
+          rows={5}
+          maxLength={5000}
+          className="w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+        />
+      )}
+
+      {media.length === 0 && (
+        <div className="mt-3 flex gap-3">
+          {BG_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              onClick={() => setBgColor(bgColor === color ? null : color)}
+              disabled={uploading}
+              aria-label={color}
+              className="h-9 w-9 rounded-full"
+              style={{
+                backgroundColor: color,
+                outline: bgColor === color ? '3px solid #9ca3af' : 'none',
+                outlineOffset: '2px'
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {media.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2">
@@ -191,4 +234,4 @@ export default function CreatePost() {
       </button>
     </div>
   );
-}
+         }
