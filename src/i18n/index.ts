@@ -69,6 +69,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'New announcement from Zumra.',
     notif_default: 'You have a new notification.',
     your_status: 'Your status',
+    'status.add': 'Add Status',
+    'status.typePlaceholder': 'Type your status...',
+    'status.whatsHappening': "What's happening?",
+    'status.postText': 'Post Text',
+    'status.postImage': 'Post Image',
     welcome_title: 'Welcome to Zumra! 👋',
     welcome_intro: "We're so glad to have you here. Zumra is your space to connect, share, and stay close to the people who matter to you.",
     welcome_can_do: "Here's what you can do:",
@@ -153,6 +158,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'Sabuwar sanarwa daga Zumra.',
     notif_default: 'Kana da sabuwar sanarwa.',
     your_status: 'Status ɗinka',
+    'status.add': 'Ƙara Status',
+    'status.typePlaceholder': 'Rubuta status ɗinka...',
+    'status.whatsHappening': 'Me ke faruwa?',
+    'status.postText': 'Wallafa Rubutu',
+    'status.postImage': 'Wallafa Hoto',
     welcome_title: 'Barka da zuwa Zumra! 👋',
     welcome_intro: 'Muna farin cikin samun ka a nan. Zumra shafinka ne na haɗuwa, raba abubuwa, da kasancewa kusa da mutanen da suke da muhimmanci a gare ka.',
     welcome_can_do: 'Ga abubuwan da za ka iya yi:',
@@ -237,6 +247,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'Nouvelle annonce de Zumra.',
     notif_default: 'Vous avez une nouvelle notification.',
     your_status: 'Votre statut',
+    'status.add': 'Ajouter un statut',
+    'status.typePlaceholder': 'Écrivez votre statut...',
+    'status.whatsHappening': 'Que se passe-t-il ?',
+    'status.postText': 'Publier le texte',
+    'status.postImage': 'Publier une image',
     welcome_title: 'Bienvenue sur Zumra ! 👋',
     welcome_intro: 'Nous sommes ravis de vous compter parmi nous. Zumra est votre espace pour vous connecter, partager et rester proche des personnes qui comptent pour vous.',
     welcome_can_do: 'Voici ce que vous pouvez faire :',
@@ -321,6 +336,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'إعلان جديد من Zumra.',
     notif_default: 'لديك إشعار جديد.',
     your_status: 'حالتك',
+    'status.add': 'إضافة حالة',
+    'status.typePlaceholder': 'اكتب حالتك...',
+    'status.whatsHappening': 'ماذا يحدث؟',
+    'status.postText': 'نشر النص',
+    'status.postImage': 'نشر صورة',
     welcome_title: 'مرحبًا بك في Zumra! 👋',
     welcome_intro: 'يسعدنا وجودك هنا. Zumra هي مساحتك للتواصل والمشاركة والبقاء قريبًا من الأشخاص المهمين في حياتك.',
     welcome_can_do: 'إليك ما يمكنك فعله:',
@@ -405,6 +425,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'Ìkéde tuntun láti Zumra.',
     notif_default: 'O ní ìfitónilétí tuntun.',
     your_status: 'Ipò rẹ',
+    'status.add': 'Fi Ipò Kún',
+    'status.typePlaceholder': 'Kọ ipò rẹ...',
+    'status.whatsHappening': 'Kí ni ń ṣẹlẹ̀?',
+    'status.postText': 'Fi Ọ̀rọ̀ Ránṣẹ́',
+    'status.postImage': 'Fi Àwòrán Ránṣẹ́',
     welcome_title: 'Káàbọ̀ sí Zumra! 👋',
     welcome_intro: 'Inú wa dùn láti ní ọ níbí. Zumra ni àyè rẹ láti sopọ̀, pín, àti láti sún mọ́ àwọn ènìyàn tí ó ṣe pàtàkì fún ọ.',
     welcome_can_do: 'Èyí ni ohun tí o lè ṣe:',
@@ -489,6 +514,11 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_announcement: 'Ọkwa ọhụrụ sitere na Zumra.',
     notif_default: 'Ị nwere ọkwa ọhụrụ.',
     your_status: 'Ọnọdụ gị',
+    'status.add': 'Tinye Ọnọdụ',
+    'status.typePlaceholder': 'Dee ọnọdụ gị...',
+    'status.whatsHappening': 'Gịnị na-eme?',
+    'status.postText': 'Bipụta Ederede',
+    'status.postImage': 'Bipụta Foto',
     welcome_title: 'Nnọọ na Zumra! 👋',
     welcome_intro: 'Obi dị anyị ụtọ inwe gị ebe a. Zumra bụ ohere gị iji jikọọ, kesaa, ma nọrọ nso ndị dị gị mkpa.',
     welcome_can_do: 'Nke a bụ ihe ị nwere ike ime:',
@@ -546,7 +576,7 @@ export function setLanguage(lang: Lang) {
   current = lang;
   localStorage.setItem('lang', lang);
   applyDirection(lang);
-  listeners.forEach((l) => l()); // yana sa duk app ya sake zana kansa
+  listeners.forEach((l) => l()); // makes the whole app re-render
 }
 
 export function getLanguage(): Lang {
@@ -557,7 +587,7 @@ export function t(key: string): string {
   return translations[current][key] ?? translations.en[key] ?? key;
 }
 
-// Yi amfani da wannan a cikin components don su sake zana kansu idan harshe ya canza
+// Use this in components so they re-render when the language changes
 export function useLang(): Lang {
   return useSyncExternalStore(subscribe, getLanguage);
 }
