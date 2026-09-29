@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useI18n } from '@/i18n';
+import { useT } from '@/i18n';
 
 export default function ForgotPassword() {
-  const { t } = useI18n();
+  const t = useT();
   const { sendPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -50,4 +50,4 @@ export default function ForgotPassword() {
       <Link to="/login" className="mt-4 text-sm text-zumra-600">{t('forgot.back')}</Link>
     </div>
   );
-    }
+  }
