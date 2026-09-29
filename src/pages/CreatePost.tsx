@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useT } from '@/i18n';
 import { createPost } from '@/services/posts';
 import { uploadImage, uploadVideo, generateVideoThumbnail } from '@/services/storage';
 import type { PrivacyLevel } from '@/types/database';
@@ -13,6 +14,7 @@ interface PendingMedia {
 }
 
 export default function CreatePost() {
+  const t = useT();
   const { user } = useAuth();
   const { dataSaver, isOffline } = useSettings();
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ export default function CreatePost() {
   const handleFiles = (e: ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = Array.from(e.target.files ?? []);
     if (type === 'image' && media.filter((m) => m.type === 'image').length + files.length > 6) {
-      setError('You can attach up to 6 images per post.');
+      setError(t('max_images_error'));
       return;
     }
     const next = files.map((file) => ({ file, type, previewUrl: URL.createObjectURL(file) }));
@@ -41,11 +43,11 @@ export default function CreatePost() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!content.trim() && media.length === 0) {
-      setError('Write something or add a photo/video.');
+      setError(t('write_something'));
       return;
     }
     if (isOffline) {
-      setError("You're offline. Waiting for connection...");
+      setError(`${t('you_are_offline')} ${t('waiting_for_connection')}`);
       return;
     }
     setError(null);
@@ -54,14 +56,17 @@ export default function CreatePost() {
       const uploaded: { path: string; type: 'image' | 'video'; thumbnailPath?: string }[] = [];
       for (let i = 0; i < media.length; i++) {
         const m = media[i];
-        const prefix = media.length > 1 ? `${m.type === 'video' ? 'Video' : 'Photo'} ${i + 1} of ${media.length}: ` : '';
+        const prefix =
+          media.length > 1
+            ? `${m.type === 'video' ? t('video') : t('photo')} ${i + 1} ${t('of')} ${media.length}: `
+            : '';
 
         if (m.type === 'image') {
-          setProgress(`${prefix}Uploading photo...`);
+          setProgress(`${prefix}${t('uploading_photo')}`);
           const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
           uploaded.push({ path, type: 'image' });
         } else {
-          let currentStatus = 'Preparing video...';
+          let currentStatus = t('preparing_video');
           setProgress(`${prefix}${currentStatus}`);
 
           const { path } = await uploadVideo({
@@ -79,7 +84,7 @@ export default function CreatePost() {
 
           let thumbnailPath: string | undefined;
           try {
-            setProgress(`${prefix}Creating thumbnail...`);
+            setProgress(`${prefix}${t('creating_thumbnail')}`);
             const thumbFile = await generateVideoThumbnail(m.file);
             const { path: thumbPath } = await uploadImage({
               file: thumbFile,
@@ -95,7 +100,7 @@ export default function CreatePost() {
           uploaded.push({ path, type: 'video', thumbnailPath });
         }
       }
-      setProgress('Saving post...');
+      setProgress(t('saving'));
       const postId = await createPost({
         authorId: user.id,
         content: content.trim(),
@@ -104,7 +109,7 @@ export default function CreatePost() {
       });
       navigate(`/post/${postId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setError(err instanceof Error ? err.message : t('something_went_wrong'));
     } finally {
       setUploading(false);
       setProgress('');
@@ -113,13 +118,13 @@ export default function CreatePost() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-lg font-bold">Create Post</h1>
+      <h1 className="mb-4 text-lg font-bold">{t('create_post')}</h1>
       {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">{error}</p>}
 
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="What's on your mind?"
+        placeholder={t('whats_on_your_mind')}
         rows={5}
         maxLength={5000}
         className="w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm dark:border-gray-700 dark:bg-gray-900"
@@ -149,25 +154,25 @@ export default function CreatePost() {
 
       <div className="mt-3 flex gap-3 text-sm">
         <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
-          🖼️ Photo
+          🖼️ {t('photo')}
           <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e, 'image')} disabled={uploading} />
         </label>
         <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700">
-          🎬 Video
+          🎬 {t('video')}
           <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFiles(e, 'video')} disabled={uploading} />
         </label>
       </div>
 
       <div className="mt-4">
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Who can see this?</label>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('who_can_see')}</label>
         <select
           value={privacy}
           onChange={(e) => setPrivacy(e.target.value as PrivacyLevel)}
           className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
         >
-          <option value="public">Public</option>
-          <option value="friends">Friends</option>
-          <option value="only_me">Only Me</option>
+          <option value="public">{t('public')}</option>
+          <option value="friends">{t('friends')}</option>
+          <option value="only_me">{t('only_me')}</option>
         </select>
       </div>
 
@@ -182,8 +187,8 @@ export default function CreatePost() {
         disabled={uploading}
         className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {uploading ? 'Please wait...' : 'Post'}
+        {uploading ? t('please_wait') : t('post')}
       </button>
     </div>
   );
-        }
+}
