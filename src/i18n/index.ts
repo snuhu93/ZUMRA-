@@ -67,7 +67,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} shared your post.',
     notif_new_message: '{name} sent you a message.',
     notif_announcement: 'New announcement from Zumra.',
-    notif_default: 'You have a new notification.'
+    notif_default: 'You have a new notification.',
+    your_status: 'Your status',
+    welcome_title: 'Welcome to Zumra! 👋',
+    welcome_intro: "We're so glad to have you here. Zumra is your space to connect, share, and stay close to the people who matter to you.",
+    welcome_can_do: "Here's what you can do:",
+    welcome_li_profile: 'Build your profile with a photo, bio, and cover image',
+    welcome_li_friends: 'Add friends and follow people you like',
+    welcome_li_share: 'Share posts, photos, and videos',
+    welcome_li_messages: 'Send private messages to your friends',
+    welcome_invite_bold: '🤝 Invite your people!',
+    welcome_invite_text: 'Zumra is better together. Invite your family and friends to join you.',
+    welcome_respect: 'To keep Zumra a friendly place for everyone, please be respectful, and use the Report or Block option if anyone makes you uncomfortable.',
+    welcome_thanks: "Thank you for joining us. We can't wait to see what you share!",
+    welcome_signoff: 'With love, The Zumra Team 💚',
+    invite_friends: 'Invite Friends & Family',
+    get_started: 'Get Started',
+    invite_share_text: 'Join me on Zumra! Connect, share, and stay close to the people who matter.'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -122,7 +138,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} ya raba wallafarka.',
     notif_new_message: '{name} ya aiko maka saƙo.',
     notif_announcement: 'Sabuwar sanarwa daga Zumra.',
-    notif_default: 'Kana da sabuwar sanarwa.'
+    notif_default: 'Kana da sabuwar sanarwa.',
+    your_status: 'Status ɗinka',
+    welcome_title: 'Barka da zuwa Zumra! 👋',
+    welcome_intro: 'Muna farin cikin samun ka a nan. Zumra shafinka ne na haɗuwa, raba abubuwa, da kasancewa kusa da mutanen da suke da muhimmanci a gare ka.',
+    welcome_can_do: 'Ga abubuwan da za ka iya yi:',
+    welcome_li_profile: 'Ka gina profile ɗinka da hoto, bayani game da kai, da hoton murfi',
+    welcome_li_friends: 'Ka ƙara abokai ka bi mutanen da kake so',
+    welcome_li_share: 'Ka raba wallafa, hotuna, da bidiyoyi',
+    welcome_li_messages: 'Ka aika wa abokanka saƙonni na sirri',
+    welcome_invite_bold: '🤝 Ka gayyaci mutanenka!',
+    welcome_invite_text: 'Zumra ta fi daɗi tare. Ka gayyaci iyalinka da abokanka su shiga tare da kai.',
+    welcome_respect: 'Don mu kiyaye Zumra a matsayin wuri mai kyau ga kowa, da fatan a mutunta juna, kuma a yi amfani da zaɓin Kai ƙara ko Toshe idan wani ya sa ka ji ba daɗi.',
+    welcome_thanks: 'Na gode da shigowa. Ba za mu iya jira mu ga abin da za ka raba ba!',
+    welcome_signoff: 'Da ƙauna, Ƙungiyar Zumra 💚',
+    invite_friends: 'Gayyaci Abokai da Iyali',
+    get_started: 'Fara Amfani',
+    invite_share_text: 'Ka shiga Zumra tare da ni! Ka haɗu, ka raba, ka kasance kusa da mutanen da suke da muhimmanci.'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -177,7 +209,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} a partagé votre publication.',
     notif_new_message: '{name} vous a envoyé un message.',
     notif_announcement: 'Nouvelle annonce de Zumra.',
-    notif_default: 'Vous avez une nouvelle notification.'
+    notif_default: 'Vous avez une nouvelle notification.',
+    your_status: 'Votre statut',
+    welcome_title: 'Bienvenue sur Zumra ! 👋',
+    welcome_intro: 'Nous sommes ravis de vous compter parmi nous. Zumra est votre espace pour vous connecter, partager et rester proche des personnes qui comptent pour vous.',
+    welcome_can_do: 'Voici ce que vous pouvez faire :',
+    welcome_li_profile: 'Créez votre profil avec une photo, une bio et une image de couverture',
+    welcome_li_friends: 'Ajoutez des amis et suivez les personnes que vous aimez',
+    welcome_li_share: 'Partagez des publications, des photos et des vidéos',
+    welcome_li_messages: 'Envoyez des messages privés à vos amis',
+    welcome_invite_bold: '🤝 Invitez vos proches !',
+    welcome_invite_text: 'Zumra est meilleur à plusieurs. Invitez votre famille et vos amis à vous rejoindre.',
+    welcome_respect: "Pour que Zumra reste un lieu convivial pour tous, soyez respectueux et utilisez l'option Signaler ou Bloquer si quelqu'un vous met mal à l'aise.",
+    welcome_thanks: 'Merci de nous avoir rejoints. Nous avons hâte de voir ce que vous partagerez !',
+    welcome_signoff: "Avec amour, L'équipe Zumra 💚",
+    invite_friends: 'Inviter des amis et la famille',
+    get_started: 'Commencer',
+    invite_share_text: 'Rejoignez-moi sur Zumra ! Connectez-vous, partagez et restez proche des personnes qui comptent.'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -232,7 +280,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} شارك منشورك.',
     notif_new_message: '{name} أرسل لك رسالة.',
     notif_announcement: 'إعلان جديد من Zumra.',
-    notif_default: 'لديك إشعار جديد.'
+    notif_default: 'لديك إشعار جديد.',
+    your_status: 'حالتك',
+    welcome_title: 'مرحبًا بك في Zumra! 👋',
+    welcome_intro: 'يسعدنا وجودك هنا. Zumra هي مساحتك للتواصل والمشاركة والبقاء قريبًا من الأشخاص المهمين في حياتك.',
+    welcome_can_do: 'إليك ما يمكنك فعله:',
+    welcome_li_profile: 'أنشئ ملفك الشخصي بصورة ونبذة وصورة غلاف',
+    welcome_li_friends: 'أضف أصدقاء وتابع من تحب',
+    welcome_li_share: 'شارك المنشورات والصور والفيديوهات',
+    welcome_li_messages: 'أرسل رسائل خاصة لأصدقائك',
+    welcome_invite_bold: '🤝 ادعُ أحبّتك!',
+    welcome_invite_text: 'Zumra أجمل معًا. ادعُ عائلتك وأصدقاءك للانضمام إليك.',
+    welcome_respect: 'للحفاظ على Zumra مكانًا ودودًا للجميع، يرجى الالتزام بالاحترام، واستخدم خيار الإبلاغ أو الحظر إذا أزعجك أحد.',
+    welcome_thanks: 'شكرًا لانضمامك إلينا. نتطلع لرؤية ما ستشاركه!',
+    welcome_signoff: 'مع الحب، فريق Zumra 💚',
+    invite_friends: 'دعوة الأصدقاء والعائلة',
+    get_started: 'ابدأ الآن',
+    invite_share_text: 'انضم إليّ على Zumra! تواصل وشارك وابقَ قريبًا من الأشخاص المهمين.'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -287,7 +351,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} pín ìfìwéránṣẹ́ rẹ.',
     notif_new_message: '{name} fi ìfọ̀rọ̀ránṣẹ́ ránṣẹ́ sí ọ.',
     notif_announcement: 'Ìkéde tuntun láti Zumra.',
-    notif_default: 'O ní ìfitónilétí tuntun.'
+    notif_default: 'O ní ìfitónilétí tuntun.',
+    your_status: 'Ipò rẹ',
+    welcome_title: 'Káàbọ̀ sí Zumra! 👋',
+    welcome_intro: 'Inú wa dùn láti ní ọ níbí. Zumra ni àyè rẹ láti sopọ̀, pín, àti láti sún mọ́ àwọn ènìyàn tí ó ṣe pàtàkì fún ọ.',
+    welcome_can_do: 'Èyí ni ohun tí o lè ṣe:',
+    welcome_li_profile: 'Kọ́ àkọọ́lẹ̀ rẹ pẹ̀lú fọ́tò, àpèjúwe, àti fọ́tò ìbòrí',
+    welcome_li_friends: 'Fi àwọn ọ̀rẹ́ kún un kí o sì tẹ̀lé àwọn ènìyàn tí o fẹ́ràn',
+    welcome_li_share: 'Pín àwọn ìfìwéránṣẹ́, fọ́tò àti fídíò',
+    welcome_li_messages: 'Fi àwọn ìfọ̀rọ̀ránṣẹ́ àdáni ránṣẹ́ sí àwọn ọ̀rẹ́ rẹ',
+    welcome_invite_bold: '🤝 Pe àwọn ènìyàn rẹ!',
+    welcome_invite_text: 'Zumra dára jù nígbà tí a bá jọ wà. Pe ẹbí àti àwọn ọ̀rẹ́ rẹ kí wọ́n darapọ̀ mọ́ ọ.',
+    welcome_respect: 'Kí Zumra lè jẹ́ ibi ọ̀rẹ́ fún gbogbo ènìyàn, jọ̀wọ́ bọ̀wọ̀ fún ara yín, kí o sì lo àṣàyàn Ròyìn tàbí Dí tí ẹnìkan bá mú ọ ní ìdààmú.',
+    welcome_thanks: 'A dúpẹ́ pé o darapọ̀ mọ́ wa. A ò lè dúró láti rí ohun tí o máa pín!',
+    welcome_signoff: 'Pẹ̀lú ìfẹ́, Ẹgbẹ́ Zumra 💚',
+    invite_friends: 'Pe Àwọn Ọ̀rẹ́ àti Ẹbí',
+    get_started: 'Bẹ̀rẹ̀',
+    invite_share_text: 'Darapọ̀ mọ́ mi lórí Zumra! Sopọ̀, pín, kí o sì sún mọ́ àwọn ènìyàn tí ó ṣe pàtàkì.'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -342,7 +422,23 @@ const translations: Record<Lang, Record<string, string>> = {
     notif_post_share: '{name} kesara ederede gị.',
     notif_new_message: '{name} zitere gị ozi.',
     notif_announcement: 'Ọkwa ọhụrụ sitere na Zumra.',
-    notif_default: 'Ị nwere ọkwa ọhụrụ.'
+    notif_default: 'Ị nwere ọkwa ọhụrụ.',
+    your_status: 'Ọnọdụ gị',
+    welcome_title: 'Nnọọ na Zumra! 👋',
+    welcome_intro: 'Obi dị anyị ụtọ inwe gị ebe a. Zumra bụ ohere gị iji jikọọ, kesaa, ma nọrọ nso ndị dị gị mkpa.',
+    welcome_can_do: 'Nke a bụ ihe ị nwere ike ime:',
+    welcome_li_profile: 'Wuo profaịlụ gị site na foto, nkọwa, na foto mkpuchi',
+    welcome_li_friends: 'Tinye ndị enyi ma soro ndị ị hụrụ n’anya',
+    welcome_li_share: 'Kesaa ederede, foto na vidiyo',
+    welcome_li_messages: 'Zipụ ndị enyi gị ozi nkeonwe',
+    welcome_invite_bold: '🤝 Kpọọ ndị gị!',
+    welcome_invite_text: 'Zumra ka mma mgbe anyị nọkọtara. Kpọọ ezinụlọ na ndị enyi gị ka ha sonyere gị.',
+    welcome_respect: 'Ka Zumra bụrụ ebe enyi maka onye ọ bụla, biko doo ndị ọzọ anya, jiri nhọrọ Kọọ ma ọ bụ Kpọchie ma ọ bụrụ na onye ọ bụla eme ka ị dị egwu.',
+    welcome_thanks: 'Daalụ maka isonyere anyị. Anyị enweghị ike ichere ịhụ ihe ị ga-akesa!',
+    welcome_signoff: 'Site n’ịhụnanya, Otu Zumra 💚',
+    invite_friends: 'Kpọọ Ndị enyi na Ezinụlọ',
+    get_started: 'Malite',
+    invite_share_text: 'Sonyere m na Zumra! Jikọọ, kesaa, ma nọrọ nso ndị dị mkpa.'
   }
 };
 
@@ -391,4 +487,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-      }
+    }
