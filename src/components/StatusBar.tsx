@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useT } from '@/i18n';
 import { fetchActiveStatuses, type StatusRow } from '@/services/status';
 
 export default function StatusBar() {
+  const t = useT();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [statuses, setStatuses] = useState<StatusRow[]>([]);
@@ -29,7 +31,7 @@ export default function StatusBar() {
           <Avatar src={profile?.avatar_url} name={profile?.full_name ?? 'You'} size={56} />
           <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-zumra-500 text-xs text-white">+</span>
         </div>
-        <span className="text-xs text-gray-600 dark:text-gray-300">Your status</span>
+        <span className="text-xs text-gray-600 dark:text-gray-300">{t('your_status')}</span>
       </button>
       {others.map(([authorId, list]) => (
         <button key={authorId} onClick={() => navigate(`/status/${authorId}`)} className="flex flex-col items-center gap-1">
