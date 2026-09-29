@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { searchPeople, searchPosts } from '@/services/search';
+import { useI18n } from '@/i18n';
 
 export default function Search() {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const debounced = useDebounce(query, 350);
   const [people, setPeople] = useState<any[]>([]);
@@ -32,15 +34,15 @@ export default function Search() {
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search people and posts..."
+        placeholder={t('search.placeholder')}
         className="w-full rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
       />
 
-      {loading && <p className="mt-4 text-center text-sm text-gray-500">Searching...</p>}
+      {loading && <p className="mt-4 text-center text-sm text-gray-500">{t('search.searching')}</p>}
 
       {!loading && people.length > 0 && (
         <div className="mt-4">
-          <h2 className="mb-2 text-xs font-semibold uppercase text-gray-500">People</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase text-gray-500">{t('search.people')}</h2>
           {people.map((p) => (
             <Link key={p.id} to={`/profile/${p.username}`} className="flex items-center gap-3 py-2">
               <Avatar src={p.avatar_url} name={p.full_name} />
@@ -55,7 +57,7 @@ export default function Search() {
 
       {!loading && posts.length > 0 && (
         <div className="mt-4">
-          <h2 className="mb-2 text-xs font-semibold uppercase text-gray-500">Posts</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase text-gray-500">{t('search.posts')}</h2>
           {posts.map((p) => (
             <Link key={p.id} to={`/post/${p.id}`} className="block border-b border-gray-100 py-3 dark:border-gray-800">
               <p className="text-xs font-medium text-gray-500">{p.author?.full_name}</p>
@@ -66,8 +68,8 @@ export default function Search() {
       )}
 
       {!loading && debounced && people.length === 0 && posts.length === 0 && (
-        <p className="mt-6 text-center text-sm text-gray-500">No results for "{debounced}".</p>
+        <p className="mt-6 text-center text-sm text-gray-500">{t('search.noResults')} "{debounced}".</p>
       )}
     </div>
   );
-}
+            }
