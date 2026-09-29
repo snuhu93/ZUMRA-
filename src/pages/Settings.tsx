@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
-import { useI18n } from '@/i18n';
+import { useT } from '@/i18n';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -45,7 +45,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function Settings() {
-  const { t } = useI18n();
+  const t = useT();
   const { user, signOut, updatePassword } = useAuth();
   const { dataSaver, setDataSaver, autoplayVideos, setAutoplayVideos, theme, setTheme } = useSettings();
   const navigate = useNavigate();
@@ -174,4 +174,4 @@ export default function Settings() {
       )}
     </div>
   );
-}
+  }
