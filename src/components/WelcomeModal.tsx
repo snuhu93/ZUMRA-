@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useT } from '@/i18n';
 
 const WELCOME_KEY = 'zumra_welcome_seen_v1';
 
 export default function WelcomeModal() {
+  const t = useT();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const storageKey = user ? `${WELCOME_KEY}_${user.id}` : null;
@@ -28,7 +30,7 @@ export default function WelcomeModal() {
 
   const handleInvite = async () => {
     const url = window.location.origin;
-    const text = 'Join me on Zumra! Connect, share, and stay close to the people who matter.';
+    const text = t('invite_share_text');
     try {
       if (navigator.share) await navigator.share({ url, title: 'Zumra', text });
       else await navigator.clipboard.writeText(`${text} ${url}`);
@@ -43,39 +45,35 @@ export default function WelcomeModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 text-gray-900 shadow-xl dark:bg-gray-900 dark:text-gray-100">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zumra-500 text-xl font-bold text-white">Z</div>
-        <h2 className="text-xl font-bold">Welcome to Zumra! 👋</h2>
-        <p className="mt-2 text-sm">
-          We're so glad to have you here. Zumra is your space to connect, share, and stay close to the people who matter to you.
-        </p>
+        <h2 className="text-xl font-bold">{t('welcome_title')}</h2>
+        <p className="mt-2 text-sm">{t('welcome_intro')}</p>
 
-        <p className="mt-4 text-sm font-semibold">Here's what you can do:</p>
+        <p className="mt-4 text-sm font-semibold">{t('welcome_can_do')}</p>
         <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-          <li>Build your profile with a photo, bio, and cover image</li>
-          <li>Add friends and follow people you like</li>
-          <li>Share posts, photos, and videos</li>
-          <li>Send private messages to your friends</li>
+          <li>{t('welcome_li_profile')}</li>
+          <li>{t('welcome_li_friends')}</li>
+          <li>{t('welcome_li_share')}</li>
+          <li>{t('welcome_li_messages')}</li>
         </ul>
 
         <p className="mt-4 text-sm">
-          <b>🤝 Invite your people!</b> Zumra is better together. Invite your family and friends to join you.
+          <b>{t('welcome_invite_bold')}</b> {t('welcome_invite_text')}
         </p>
 
-        <p className="mt-4 text-sm">
-          To keep Zumra a friendly place for everyone, please be respectful, and use the Report or Block option if anyone makes you uncomfortable.
-        </p>
+        <p className="mt-4 text-sm">{t('welcome_respect')}</p>
 
-        <p className="mt-4 text-sm">Thank you for joining us. We can't wait to see what you share!</p>
-        <p className="mt-1 text-sm">With love, The Zumra Team 💚</p>
+        <p className="mt-4 text-sm">{t('welcome_thanks')}</p>
+        <p className="mt-1 text-sm">{t('welcome_signoff')}</p>
 
         <div className="mt-5 flex flex-col gap-2">
           <button onClick={handleInvite} className="rounded-lg bg-zumra-500 px-4 py-2.5 text-sm font-semibold text-white">
-            Invite Friends & Family
+            {t('invite_friends')}
           </button>
           <button onClick={close} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold dark:border-gray-700">
-            Get Started
+            {t('get_started')}
           </button>
         </div>
       </div>
     </div>
   );
-}
+    }
