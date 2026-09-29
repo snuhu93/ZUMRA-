@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useT, t as translate } from '@/i18n';
 import { fetchNotifications, markAllRead, notificationMessage, type NotificationRow } from '@/services/notifications';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return 'now';
+  if (seconds < 60) return translate('time_now');
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
@@ -34,6 +35,7 @@ function targetPath(n: NotificationRow): string {
 }
 
 export default function Notifications() {
+  const t = useT();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<NotificationRow[]>([]);
@@ -48,11 +50,11 @@ export default function Notifications() {
     });
   }, [user]);
 
-  if (loading) return <p className="p-6 text-center text-sm text-gray-500">Loading...</p>;
+  if (loading) return <p className="p-6 text-center text-sm text-gray-500">{t('loading')}</p>;
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-800">
-      {items.length === 0 && <p className="p-10 text-center text-sm text-gray-500">You don't have any notifications yet.</p>}
+      {items.length === 0 && <p className="p-10 text-center text-sm text-gray-500">{t('no_notifications_yet')}</p>}
       {items.map((n) => (
         <button key={n.id} onClick={() => navigate(targetPath(n))} className="flex w-full items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800">
           <Avatar src={n.actor?.avatar_url} name={n.actor?.full_name ?? 'ZUMRA'} />
@@ -65,4 +67,4 @@ export default function Notifications() {
       ))}
     </div>
   );
-}
+    }
