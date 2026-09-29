@@ -83,7 +83,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: 'With love, The Zumra Team 💚',
     invite_friends: 'Invite Friends & Family',
     get_started: 'Get Started',
-    invite_share_text: 'Join me on Zumra! Connect, share, and stay close to the people who matter.'
+    invite_share_text: 'Join me on Zumra! Connect, share, and stay close to the people who matter.',
+    full_name_error: 'Please enter your full name.',
+    username_error: 'Username must be 3-20 characters: letters, numbers, underscores only.',
+    password_error: 'Password must be at least 8 characters.',
+    check_email: 'Check your email',
+    confirm_sent: 'We sent a confirmation link to {email}. Confirm it, then log in.',
+    back_to_login: 'Back to Log In',
+    create_zumra_account: 'Create your ZUMRA account',
+    full_name: 'Full name', username: 'Username', email: 'Email',
+    phone_number: 'Phone number', password: 'Password',
+    password_placeholder: 'Password (min 8 characters)',
+    creating_account: 'Creating account...', sign_up: 'Sign Up',
+    have_account: 'Already have an account?', logging_in: 'Logging in...',
+    forgot_password: 'Forgot password?', create_account: 'Create account'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -154,7 +167,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: 'Da ƙauna, Ƙungiyar Zumra 💚',
     invite_friends: 'Gayyaci Abokai da Iyali',
     get_started: 'Fara Amfani',
-    invite_share_text: 'Ka shiga Zumra tare da ni! Ka haɗu, ka raba, ka kasance kusa da mutanen da suke da muhimmanci.'
+    invite_share_text: 'Ka shiga Zumra tare da ni! Ka haɗu, ka raba, ka kasance kusa da mutanen da suke da muhimmanci.',
+    full_name_error: 'Da fatan a shigar da cikakken sunanka.',
+    username_error: 'Sunan mai amfani dole ya kasance haruffa 3 zuwa 20: haruffa, lambobi, da alamar ƙasa (_) kaɗai.',
+    password_error: 'Kalmar sirri dole ta kasance aƙalla haruffa 8.',
+    check_email: 'Duba imel ɗinka',
+    confirm_sent: 'Mun aika hanyar tabbatarwa zuwa {email}. Ka tabbatar da ita, sannan ka shiga.',
+    back_to_login: 'Komawa zuwa Shiga',
+    create_zumra_account: 'Buɗe account ɗinka na ZUMRA',
+    full_name: 'Cikakken suna', username: 'Sunan mai amfani', email: 'Imel',
+    phone_number: 'Lambar waya', password: 'Kalmar sirri',
+    password_placeholder: 'Kalmar sirri (aƙalla haruffa 8)',
+    creating_account: 'Ana buɗe account...', sign_up: 'Yi Rajista',
+    have_account: 'Kana da account tuni?', logging_in: 'Ana shiga...',
+    forgot_password: 'Ka manta kalmar sirri?', create_account: 'Buɗe account'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -225,7 +251,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: "Avec amour, L'équipe Zumra 💚",
     invite_friends: 'Inviter des amis et la famille',
     get_started: 'Commencer',
-    invite_share_text: 'Rejoignez-moi sur Zumra ! Connectez-vous, partagez et restez proche des personnes qui comptent.'
+    invite_share_text: 'Rejoignez-moi sur Zumra ! Connectez-vous, partagez et restez proche des personnes qui comptent.',
+    full_name_error: 'Veuillez saisir votre nom complet.',
+    username_error: "Le nom d'utilisateur doit contenir 3 à 20 caractères : lettres, chiffres et tirets bas uniquement.",
+    password_error: 'Le mot de passe doit contenir au moins 8 caractères.',
+    check_email: 'Vérifiez votre e-mail',
+    confirm_sent: 'Nous avons envoyé un lien de confirmation à {email}. Confirmez-le, puis connectez-vous.',
+    back_to_login: 'Retour à la connexion',
+    create_zumra_account: 'Créez votre compte ZUMRA',
+    full_name: 'Nom complet', username: "Nom d'utilisateur", email: 'E-mail',
+    phone_number: 'Numéro de téléphone', password: 'Mot de passe',
+    password_placeholder: 'Mot de passe (8 caractères min.)',
+    creating_account: 'Création du compte...', sign_up: "S'inscrire",
+    have_account: 'Vous avez déjà un compte ?', logging_in: 'Connexion...',
+    forgot_password: 'Mot de passe oublié ?', create_account: 'Créer un compte'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -296,7 +335,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: 'مع الحب، فريق Zumra 💚',
     invite_friends: 'دعوة الأصدقاء والعائلة',
     get_started: 'ابدأ الآن',
-    invite_share_text: 'انضم إليّ على Zumra! تواصل وشارك وابقَ قريبًا من الأشخاص المهمين.'
+    invite_share_text: 'انضم إليّ على Zumra! تواصل وشارك وابقَ قريبًا من الأشخاص المهمين.',
+    full_name_error: 'يرجى إدخال اسمك الكامل.',
+    username_error: 'يجب أن يتكون اسم المستخدم من 3 إلى 20 حرفًا: أحرف وأرقام وشرطات سفلية فقط.',
+    password_error: 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+    check_email: 'تحقق من بريدك الإلكتروني',
+    confirm_sent: 'أرسلنا رابط تأكيد إلى {email}. قم بتأكيده ثم سجّل الدخول.',
+    back_to_login: 'العودة إلى تسجيل الدخول',
+    create_zumra_account: 'أنشئ حسابك في ZUMRA',
+    full_name: 'الاسم الكامل', username: 'اسم المستخدم', email: 'البريد الإلكتروني',
+    phone_number: 'رقم الهاتف', password: 'كلمة المرور',
+    password_placeholder: 'كلمة المرور (8 أحرف على الأقل)',
+    creating_account: 'جارٍ إنشاء الحساب...', sign_up: 'إنشاء حساب',
+    have_account: 'لديك حساب بالفعل؟', logging_in: 'جارٍ تسجيل الدخول...',
+    forgot_password: 'نسيت كلمة المرور؟', create_account: 'إنشاء حساب'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -367,7 +419,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: 'Pẹ̀lú ìfẹ́, Ẹgbẹ́ Zumra 💚',
     invite_friends: 'Pe Àwọn Ọ̀rẹ́ àti Ẹbí',
     get_started: 'Bẹ̀rẹ̀',
-    invite_share_text: 'Darapọ̀ mọ́ mi lórí Zumra! Sopọ̀, pín, kí o sì sún mọ́ àwọn ènìyàn tí ó ṣe pàtàkì.'
+    invite_share_text: 'Darapọ̀ mọ́ mi lórí Zumra! Sopọ̀, pín, kí o sì sún mọ́ àwọn ènìyàn tí ó ṣe pàtàkì.',
+    full_name_error: 'Jọ̀wọ́ tẹ orúkọ rẹ pátápátá sí i.',
+    username_error: 'Orúkọ olùlò gbọ́dọ̀ jẹ́ ẹ̀dá àmì 3 sí 20: lẹ́tà, nọ́ńbà àti àmì ìsàlẹ̀ nìkan.',
+    password_error: 'Ọ̀rọ̀ ìgbaniwọlé gbọ́dọ̀ jẹ́ ẹ̀dá àmì 8 tàbí jù bẹ́ẹ̀ lọ.',
+    check_email: 'Wo ímeèlì rẹ',
+    confirm_sent: 'A fi ọ̀nà ìjẹ́rìísí ránṣẹ́ sí {email}. Jẹ́rìí sí i, lẹ́yìn náà kí o wọlé.',
+    back_to_login: 'Padà sí Wọlé',
+    create_zumra_account: 'Ṣẹ̀dá àkọọ́lẹ̀ ZUMRA rẹ',
+    full_name: 'Orúkọ pípé', username: 'Orúkọ olùlò', email: 'Ímeèlì',
+    phone_number: 'Nọ́ńbà fóònù', password: 'Ọ̀rọ̀ ìgbaniwọlé',
+    password_placeholder: 'Ọ̀rọ̀ ìgbaniwọlé (o kéré jù 8)',
+    creating_account: 'Ń ṣẹ̀dá àkọọ́lẹ̀...', sign_up: 'Forúkọsílẹ̀',
+    have_account: 'Ǹjẹ́ o ti ní àkọọ́lẹ̀?', logging_in: 'Ń wọlé...',
+    forgot_password: 'Ṣé o gbàgbé ọ̀rọ̀ ìgbaniwọlé?', create_account: 'Ṣẹ̀dá àkọọ́lẹ̀'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -438,7 +503,20 @@ const translations: Record<Lang, Record<string, string>> = {
     welcome_signoff: 'Site n’ịhụnanya, Otu Zumra 💚',
     invite_friends: 'Kpọọ Ndị enyi na Ezinụlọ',
     get_started: 'Malite',
-    invite_share_text: 'Sonyere m na Zumra! Jikọọ, kesaa, ma nọrọ nso ndị dị mkpa.'
+    invite_share_text: 'Sonyere m na Zumra! Jikọọ, kesaa, ma nọrọ nso ndị dị mkpa.',
+    full_name_error: 'Biko tinye aha gị zuru ezu.',
+    username_error: 'Aha njirimara ga-abụ mkpụrụedemede 3 ruo 20: mkpụrụedemede, ọnụọgụ na akara ala naanị.',
+    password_error: 'Okwuntughe ga-abụ opekata mpe mkpụrụedemede 8.',
+    check_email: 'Lelee imeel gị',
+    confirm_sent: 'Anyị zigara njikọ nkwenye na {email}. Kwenye ya, wee banye.',
+    back_to_login: 'Laghachi na Banye',
+    create_zumra_account: 'Mepụta akaụntụ ZUMRA gị',
+    full_name: 'Aha zuru ezu', username: 'Aha njirimara', email: 'Imeel',
+    phone_number: 'Nọmba ekwentị', password: 'Okwuntughe',
+    password_placeholder: 'Okwuntughe (opekata mpe 8)',
+    creating_account: 'Na-emepụta akaụntụ...', sign_up: 'Debanye aha',
+    have_account: 'Ị nwere akaụntụ ugbu a?', logging_in: 'Na-abanye...',
+    forgot_password: 'Chefuru okwuntughe?', create_account: 'Mepụta akaụntụ'
   }
 };
 
