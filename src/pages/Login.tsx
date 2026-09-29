@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useT } from '@/i18n';
+import LanguageSelector from '@/components/LanguageSelector';
 
 export default function Login() {
+  const t = useT();
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +33,11 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 dark:bg-surface-dark">
+      <div className="mb-6 flex items-center gap-2 text-sm">
+        <span>🌐</span>
+        <LanguageSelector />
+      </div>
+
       <div className="mb-8 flex flex-col items-center gap-2">
         <svg width="56" height="56" viewBox="0 0 100 100">
           <rect width="100" height="100" rx="24" fill="#0F9D58" />
@@ -37,7 +45,7 @@ export default function Login() {
           <circle cx="72" cy="32" r="5.5" fill="#FFFFFF" />
         </svg>
         <h1 className="text-2xl font-bold text-zumra-600 dark:text-zumra-400">ZUMRA</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Connect. Share. Belong.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('tagline')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
@@ -45,7 +53,7 @@ export default function Login() {
         <input
           type="email"
           required
-          placeholder="Email"
+          placeholder={t('email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
@@ -53,7 +61,7 @@ export default function Login() {
         <input
           type="password"
           required
-          placeholder="Password"
+          placeholder={t('password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
@@ -63,11 +71,11 @@ export default function Login() {
           disabled={submitting}
           className="w-full rounded-lg bg-zumra-500 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {submitting ? 'Logging in...' : 'Log In'}
+          {submitting ? t('logging_in') : t('login')}
         </button>
         <div className="flex justify-between text-xs">
-          <Link to="/forgot-password" className="text-zumra-600 dark:text-zumra-400">Forgot password?</Link>
-          <Link to="/register" state={location.state} className="text-zumra-600 dark:text-zumra-400">Create account</Link>
+          <Link to="/forgot-password" className="text-zumra-600 dark:text-zumra-400">{t('forgot_password')}</Link>
+          <Link to="/register" state={location.state} className="text-zumra-600 dark:text-zumra-400">{t('create_account')}</Link>
         </div>
       </form>
     </div>
