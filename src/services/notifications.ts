@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
+import { t } from '@/i18n';
 
 export interface NotificationRow {
   id: string;
@@ -39,17 +40,18 @@ export async function markAllRead(userId: string) {
 }
 
 export function notificationMessage(n: NotificationRow): string {
-  const name = n.actor?.full_name ?? 'Someone';
+  const name = n.actor?.full_name ?? t('someone');
+  const fill = (key: string) => t(key).replace('{name}', name);
   switch (n.type) {
-    case 'friend_request': return `${name} sent you a friend request.`;
-    case 'friend_request_accepted': return `${name} accepted your friend request.`;
-    case 'new_follower': return `${name} started following you.`;
-    case 'post_like': return `${name} liked your post.`;
-    case 'comment': return `${name} commented on your post.`;
-    case 'comment_reply': return `${name} replied to a comment.`;
-    case 'post_share': return `${name} shared your post.`;
-    case 'new_message': return `${name} sent you a message.`;
-    case 'announcement': return n.content ?? 'New announcement from Zumra.';
-    default: return 'You have a new notification.';
+    case 'friend_request': return fill('notif_friend_request');
+    case 'friend_request_accepted': return fill('notif_friend_request_accepted');
+    case 'new_follower': return fill('notif_new_follower');
+    case 'post_like': return fill('notif_post_like');
+    case 'comment': return fill('notif_comment');
+    case 'comment_reply': return fill('notif_comment_reply');
+    case 'post_share': return fill('notif_post_share');
+    case 'new_message': return fill('notif_new_message');
+    case 'announcement': return n.content ?? t('notif_announcement');
+    default: return t('notif_default');
   }
-}
+                                                                 }
