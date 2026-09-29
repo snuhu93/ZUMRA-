@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { searchPeople, searchPosts } from '@/services/search';
-import { useI18n } from '@/i18n';
+import { useT } from '@/i18n';
 
 export default function Search() {
-  const { t } = useI18n();
+  const t = useT();
   const [query, setQuery] = useState('');
   const debounced = useDebounce(query, 350);
   const [people, setPeople] = useState<any[]>([]);
@@ -72,4 +72,4 @@ export default function Search() {
       )}
     </div>
   );
-            }
+        }
