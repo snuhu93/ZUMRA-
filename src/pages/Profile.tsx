@@ -21,10 +21,12 @@ import {
 import { getOrCreateConversation } from '@/services/messages';
 import { blockUser } from '@/services/moderation';
 import type { Profile } from '@/types/database';
+import { useT } from '@/i18n';
 
 type ProfileTab = 'posts' | 'about' | 'photos' | 'videos';
 
 export default function ProfilePage() {
+  const t = useT();
   const { username } = useParams<{ username?: string }>();
   const { user, profile: myProfile } = useAuth();
   const navigate = useNavigate();
@@ -129,7 +131,7 @@ export default function ProfilePage() {
       setCounts(await fetchCounts(profile.id));
     } catch (err: any) {
       console.error('handleFollow error:', err);
-      alert(`Could not update follow: ${err?.message ?? 'unknown error'}`);
+      alert(`${t('profile.followFailed')} ${err?.message ?? t('profile.unknownError')}`);
     } finally {
       setFollowBusy(false);
     }
@@ -143,7 +145,7 @@ export default function ProfilePage() {
       navigate(`/messages/${conversationId}`);
     } catch (err: any) {
       console.error('handleMessage error:', err);
-      alert(`Could not open the conversation: ${err?.message ?? 'unknown error'}`);
+      alert(`${t('profile.messageFailed')} ${err?.message ?? t('profile.unknownError')}`);
     } finally {
       setMessageBusy(false);
     }
@@ -151,13 +153,13 @@ export default function ProfilePage() {
 
   const handleBlock = async () => {
     if (!user || !profile) return;
-    if (!confirm(`Block ${profile.full_name}? They won't be able to interact with you.`)) return;
+    if (!confirm(t('profile.blockConfirm').replace('{name}', profile.full_name))) return;
     try {
       await blockUser(user.id, profile.id);
       navigate('/');
     } catch (err: any) {
       console.error('handleBlock error:', err);
-      alert(`Could not block this user: ${err?.message ?? 'unknown error'}`);
+      alert(`${t('profile.blockFailed')} ${err?.message ?? t('profile.unknownError')}`);
     }
   };
 
@@ -174,24 +176,24 @@ export default function ProfilePage() {
   };
 
   if (loading) return <SkeletonPost />;
-  if (!profile) return <p className="p-6 text-center text-sm text-gray-500">Profile not found.</p>;
+  if (!profile) return <p className="p-6 text-center text-sm text-gray-500">{t('profile_not_found')}</p>;
 
   // Official admin accounts do not accept friend requests or follows
   const canFriendOrFollow = !profile.is_admin;
 
   const friendLabel = relationship.isFriend
-    ? 'Friends ✓'
+    ? t('friends_status')
     : relationship.requestSentId
-    ? 'Request Sent'
+    ? t('request_sent')
     : relationship.requestReceivedId
-    ? 'Accept Request'
-    : 'Add Friend';
+    ? t('accept_request')
+    : t('add_friend');
 
   const tabs: { key: ProfileTab; label: string }[] = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'about', label: 'About' },
-    { key: 'photos', label: 'Photos' },
-    { key: 'videos', label: 'Videos' },
+    { key: 'posts', label: t('posts') },
+    { key: 'about', label: t('about') },
+    { key: 'photos', label: t('photos') },
+    { key: 'videos', label: t('videos') },
   ];
 
   return (
@@ -215,42 +217,42 @@ export default function ProfilePage() {
         )}
 
         <div className="mt-3 flex gap-4 text-sm">
-          <span><b>{counts.posts}</b> Posts</span>
-          <span><b>{counts.friends}</b> Friends</span>
-          <span><b>{counts.followers}</b> Followers</span>
-          <span><b>{counts.following}</b> Following</span>
+          <span><b>{counts.posts}</b> {t('posts')}</span>
+          <span><b>{counts.friends}</b> {t('friends')}</span>
+          <span><b>{counts.followers}</b> {t('followers')}</span>
+          <span><b>{counts.following}</b> {t('following')}</span>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {isOwnProfile ? (
-            <button onClick={() => navigate('/profile/edit')} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">Edit Profile</button>
+            <button onClick={() => navigate('/profile/edit')} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('edit_profile')}</button>
           ) : (
             <>
               {canFriendOrFollow && (
                 <>
                   <button onClick={handleFriendAction} disabled={busy} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{friendLabel}</button>
                   <button onClick={handleFollow} disabled={followBusy} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-60 dark:border-gray-700">
-                    {relationship.isFollowing ? 'Following' : 'Follow'}
+                    {relationship.isFollowing ? t('following') : t('follow')}
                   </button>
                 </>
               )}
               <button type="button" onClick={handleMessage} disabled={messageBusy} className="relative z-10 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700 disabled:opacity-60">
-                {messageBusy ? '...' : 'Message'}
+                {messageBusy ? '...' : t('message')}
               </button>
             </>
           )}
-          <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">Share</button>
+          <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">{t('share')}</button>
           {!isOwnProfile && (
             <>
-              <button onClick={() => navigate(`/report?type=user&id=${profile.id}`)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">Report</button>
-              <button onClick={handleBlock} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">Block</button>
+              <button onClick={() => navigate(`/report?type=user&id=${profile.id}`)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">{t('report')}</button>
+              <button onClick={handleBlock} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">{t('block')}</button>
             </>
           )}
         </div>
 
         {isOwnProfile && (
           <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="font-semibold">🌐 Language:</span>
+            <span className="font-semibold">🌐 {t('language')}:</span>
             <LanguageSelector />
           </div>
         )}
@@ -274,7 +276,7 @@ export default function ProfilePage() {
 
       {activeTab === 'posts' && (
         <div className="border-t border-gray-200 dark:border-gray-800">
-          {posts.length === 0 && <p className="p-10 text-center text-sm text-gray-500">No posts yet.</p>}
+          {posts.length === 0 && <p className="p-10 text-center text-sm text-gray-500">{t('no_posts_yet')}</p>}
           {posts.map((post) => (
             <PostCard key={post.id} post={post} onChanged={load} />
           ))}
@@ -283,19 +285,19 @@ export default function ProfilePage() {
 
       {activeTab === 'about' && (
         <div className="border-t border-gray-200 p-4 dark:border-gray-800">
-          <h2 className="mb-3 text-sm font-bold text-gray-500 dark:text-gray-400">Details</h2>
+          <h2 className="mb-3 text-sm font-bold text-gray-500 dark:text-gray-400">{t('profile.details')}</h2>
           <div className="space-y-3 text-sm">
-            <p><span className="font-semibold">Username:</span> @{profile.username}</p>
-            {profile.bio && <p><span className="font-semibold">Bio:</span> {profile.bio}</p>}
-            {profile.location && <p><span className="font-semibold">Location:</span> 📍 {profile.location}</p>}
+            <p><span className="font-semibold">{t('profile.username')}</span> @{profile.username}</p>
+            {profile.bio && <p><span className="font-semibold">{t('profile.bio')}</span> {profile.bio}</p>}
+            {profile.location && <p><span className="font-semibold">{t('profile.location')}</span> 📍 {profile.location}</p>}
             {profile.website && (
               <p>
-                <span className="font-semibold">Website:</span>{' '}
+                <span className="font-semibold">{t('profile.website')}</span>{' '}
                 <a href={profile.website} target="_blank" rel="noreferrer" className="text-zumra-600">{profile.website}</a>
               </p>
             )}
             {!profile.bio && !profile.location && !profile.website && (
-              <p className="text-gray-500">No additional details added yet.</p>
+              <p className="text-gray-500">{t('profile.noDetails')}</p>
             )}
           </div>
         </div>
@@ -304,7 +306,7 @@ export default function ProfilePage() {
       {activeTab === 'photos' && (
         <div className="border-t border-gray-200 p-1 dark:border-gray-800">
           {allPhotos.length === 0 ? (
-            <p className="p-10 text-center text-sm text-gray-500">No photos yet.</p>
+            <p className="p-10 text-center text-sm text-gray-500">{t('no_photos_yet')}</p>
           ) : (
             <div className="grid grid-cols-3 gap-1">
               {allPhotos.map((photo, index) => (
@@ -325,7 +327,7 @@ export default function ProfilePage() {
       {activeTab === 'videos' && (
         <div className="border-t border-gray-200 p-1 dark:border-gray-800">
           {allVideos.length === 0 ? (
-            <p className="p-10 text-center text-sm text-gray-500">No videos yet.</p>
+            <p className="p-10 text-center text-sm text-gray-500">{t('no_videos_yet')}</p>
           ) : (
             <div className="grid grid-cols-3 gap-1">
               {allVideos.map((video) => (
