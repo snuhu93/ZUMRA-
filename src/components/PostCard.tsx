@@ -20,7 +20,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-// New component: a video that plays/pauses itself while scrolling
+// A video that plays/pauses itself while scrolling
 function FeedVideoPreview({
   src,
   thumbnail,
@@ -52,7 +52,7 @@ function FeedVideoPreview({
   return (
     <button
       onClick={onOpen}
-      className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
+      className="relative flex h-56 w-full items-center justify-center overflow-hidden bg-gray-800"
       aria-label="Play video"
     >
       <video
@@ -72,7 +72,7 @@ function FeedVideoPreview({
   );
 }
 
-// New component: fullscreen image viewer with swipe between photos (used in PostCard and ProfilePage)
+// Fullscreen image viewer with swipe between photos (used in PostCard and ProfilePage)
 export function ImageLightbox({
   images,
   startIndex,
@@ -236,8 +236,8 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const isColoredPost = !!post.background_color && !!post.content && sortedMedia.length === 0;
 
   return (
-    <article className="mb-2 bg-white p-4 dark:bg-gray-900">
-      <div className="flex items-start justify-between">
+    <article className="mb-2 bg-white py-3 dark:bg-gray-900">
+      <div className="flex items-start justify-between px-4">
         <Link to={`/profile/${post.author?.username}`} className="flex items-center gap-3">
           <Avatar src={post.author?.avatar_url} name={post.author?.full_name ?? 'User'} />
           <div>
@@ -269,17 +269,17 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
 
       {isColoredPost ? (
         <div
-          className="mt-3 flex min-h-[14rem] items-center justify-center rounded-xl p-6"
+          className="mt-3 flex min-h-[14rem] items-center justify-center p-6"
           style={{ backgroundColor: post.background_color ?? undefined }}
         >
           <p className="whitespace-pre-wrap break-words text-center text-xl font-bold text-white">{post.content}</p>
         </div>
       ) : (
-        post.content && <p className="mt-3 whitespace-pre-wrap text-sm">{post.content}</p>
+        post.content && <p className="mt-3 whitespace-pre-wrap px-4 text-sm">{post.content}</p>
       )}
 
       {sortedMedia.length > 0 && (
-        <div className={`mt-3 grid gap-1 ${sortedMedia.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`mt-3 grid gap-0.5 ${sortedMedia.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {sortedMedia.map((m) =>
             m.media_type === 'image' ? (
               <img
@@ -288,7 +288,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
                 alt=""
                 loading="lazy"
                 onClick={() => setLightboxIndex(imageMedia.findIndex((im) => im.id === m.id))}
-                className="max-h-96 w-full cursor-pointer rounded-lg object-cover"
+                className="max-h-96 w-full cursor-pointer object-cover"
               />
             ) : !dataSaver && autoplayVideos ? (
               <FeedVideoPreview
@@ -301,7 +301,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
               <button
                 key={m.id}
                 onClick={() => { setFullscreenMediaId(m.id); setMuted(false); }}
-                className="relative flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-gray-800"
+                className="relative flex h-56 w-full items-center justify-center overflow-hidden bg-gray-800"
                 aria-label="Play video"
               >
                 {m.thumbnail_path && (
@@ -314,7 +314,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-around border-t border-gray-100 pt-2 dark:border-gray-800">
+      <div className="mt-3 flex items-center justify-around border-t border-gray-100 px-4 pt-2 dark:border-gray-800">
         <button onClick={handleLike} className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-gray-800">
           <ThumbsUp
             style={{ width: 'clamp(18px, 5vw, 20px)', height: 'clamp(18px, 5vw, 20px)' }}
@@ -423,4 +423,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-    }
+  }
