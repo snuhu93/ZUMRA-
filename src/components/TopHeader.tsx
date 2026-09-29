@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { unreadCount } from '@/services/notifications';
 import { unreadConversationsCount } from '@/services/messages';
+import { useT } from '@/i18n';
 
 export default function TopHeader() {
+  const t = useT();
   const { profile, user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
@@ -62,16 +64,16 @@ export default function TopHeader() {
 
       <Link
         to="/search"
-        aria-label="Search"
+        aria-label={t('search_zumra')}
         className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
       >
-        🔍 <span className="truncate">Search Zumra</span>
+        🔍 <span className="truncate">{t('search_zumra')}</span>
       </Link>
 
       <div className="flex shrink-0 items-center gap-2">
         <Link
           to="/notifications"
-          aria-label="Notifications"
+          aria-label={t('settings.notifications')}
           onClick={() => setUnreadNotifs(0)}
           className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
@@ -84,7 +86,7 @@ export default function TopHeader() {
         </Link>
         <Link
           to="/messages"
-          aria-label="Messages"
+          aria-label={t('nav_messages')}
           className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           💬
@@ -96,7 +98,7 @@ export default function TopHeader() {
         </Link>
         <Link
           to="/create"
-          aria-label="Create post"
+          aria-label={t('create_post')}
           className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
         >
           ➕
@@ -115,13 +117,13 @@ export default function TopHeader() {
         <div className="relative shrink-0" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Profile menu"
+            aria-label={t('nav_profile')}
             className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-gray-200 text-sm font-bold dark:bg-gray-700"
           >
             {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
-                alt="Profile"
+                alt={t('nav_profile')}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -136,20 +138,20 @@ export default function TopHeader() {
                 onClick={() => setMenuOpen(false)}
                 className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                Profile
+                {t('nav_profile')}
               </Link>
               <Link
                 to="/settings"
                 onClick={() => setMenuOpen(false)}
                 className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                Settings
+                {t('settings')}
               </Link>
               <button
                 onClick={handleLogout}
                 className="block w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                Log out
+                {t('logout')}
               </button>
             </div>
           )}
@@ -157,4 +159,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-                                }
+      }
