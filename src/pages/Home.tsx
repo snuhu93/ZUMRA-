@@ -9,9 +9,11 @@ import Avatar from '@/components/Avatar';
 import WelcomeModal from '@/components/WelcomeModal';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Image as ImageIcon } from 'lucide-react';
+import { useT } from '@/i18n';
 
-// Sabon component: "What's on your mind?" composer bar (Facebook style)
+// "What's on your mind?" composer bar (Facebook style)
 function CreatePostBar() {
+  const t = useT();
   const navigate = useNavigate();
   const { profile } = useAuth();
 
@@ -19,19 +21,19 @@ function CreatePostBar() {
     <div className="flex items-center gap-3 border-b border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
       <button
         onClick={() => navigate(`/profile/${profile?.username ?? ''}`)}
-        aria-label="Open your profile"
+        aria-label={t('home.openProfile')}
       >
-        <Avatar src={profile?.avatar_url} name={profile?.full_name ?? 'User'} size={40} />
+        <Avatar src={profile?.avatar_url} name={profile?.full_name ?? t('reels.user')} size={40} />
       </button>
       <button
         onClick={() => navigate('/create')}
         className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-left text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
       >
-        What's on your mind?
+        {t('whats_on_your_mind')}
       </button>
       <button
         onClick={() => navigate('/create?media=photo')}
-        aria-label="Add photo"
+        aria-label={t('home.addPhoto')}
         className="flex items-center justify-center rounded-full p-2 text-green-600"
       >
         <ImageIcon size={22} />
@@ -41,6 +43,7 @@ function CreatePostBar() {
 }
 
 export default function Home() {
+  const t = useT();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -60,11 +63,11 @@ export default function Home() {
       setCursor(nextCursor);
       setHasMore(!!nextCursor);
     } catch {
-      setError('Something went wrong loading your feed. Please try again.');
+      setError(t('feed_error'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, t]);
 
   useEffect(() => {
     if (!initialLoadDone.current) {
@@ -109,14 +112,14 @@ export default function Home() {
       {!loading && error && (
         <div className="p-6 text-center text-sm text-gray-500">
           {error}
-          <button onClick={loadInitial} className="mt-2 block w-full text-zumra-600 font-semibold">Try again</button>
+          <button onClick={loadInitial} className="mt-2 block w-full text-zumra-600 font-semibold">{t('try_again')}</button>
         </div>
       )}
 
       {!loading && !error && posts.length === 0 && (
         <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
-          No posts yet.
-          <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">Create your first post</button>
+          {t('no_posts_yet')}
+          <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">{t('create_first_post')}</button>
         </div>
       )}
 
@@ -126,4 +129,4 @@ export default function Home() {
       {loadingMore && <SkeletonPost />}
     </div>
   );
-        }
+}
