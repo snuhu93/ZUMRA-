@@ -56,7 +56,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'Creating thumbnail...',
     who_can_see: 'Who can see this?', public: 'Public', only_me: 'Only Me',
     please_wait: 'Please wait...', post: 'Post',
-    search_conversations: 'Search conversations...', say_hello: 'Say hello 👋', unknown_user: 'Unknown'
+    search_conversations: 'Search conversations...', say_hello: 'Say hello 👋', unknown_user: 'Unknown',
+    someone: 'Someone',
+    notif_friend_request: '{name} sent you a friend request.',
+    notif_friend_request_accepted: '{name} accepted your friend request.',
+    notif_new_follower: '{name} started following you.',
+    notif_post_like: '{name} liked your post.',
+    notif_comment: '{name} commented on your post.',
+    notif_comment_reply: '{name} replied to a comment.',
+    notif_post_share: '{name} shared your post.',
+    notif_new_message: '{name} sent you a message.',
+    notif_announcement: 'New announcement from Zumra.',
+    notif_default: 'You have a new notification.'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -100,7 +111,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'Ana ƙirƙirar ƙaramin hoto...',
     who_can_see: 'Su wa za su iya ganin wannan?', public: 'Kowa', only_me: 'Ni kaɗai',
     please_wait: 'Da fatan a jira...', post: 'Wallafa',
-    search_conversations: 'Nemi hirarraki...', say_hello: 'Ka gaisa 👋', unknown_user: 'Ba a sani ba'
+    search_conversations: 'Nemi hirarraki...', say_hello: 'Ka gaisa 👋', unknown_user: 'Ba a sani ba',
+    someone: 'Wani',
+    notif_friend_request: '{name} ya aiko maka buƙatar abota.',
+    notif_friend_request_accepted: '{name} ya amince da buƙatar abotarka.',
+    notif_new_follower: '{name} ya fara bin ka.',
+    notif_post_like: '{name} ya so wallafarka.',
+    notif_comment: '{name} ya yi sharhi a kan wallafarka.',
+    notif_comment_reply: '{name} ya amsa wani sharhi.',
+    notif_post_share: '{name} ya raba wallafarka.',
+    notif_new_message: '{name} ya aiko maka saƙo.',
+    notif_announcement: 'Sabuwar sanarwa daga Zumra.',
+    notif_default: 'Kana da sabuwar sanarwa.'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -144,7 +166,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'Création de la miniature...',
     who_can_see: 'Qui peut voir ceci ?', public: 'Public', only_me: 'Moi uniquement',
     please_wait: 'Veuillez patienter...', post: 'Publier',
-    search_conversations: 'Rechercher des conversations...', say_hello: 'Dites bonjour 👋', unknown_user: 'Inconnu'
+    search_conversations: 'Rechercher des conversations...', say_hello: 'Dites bonjour 👋', unknown_user: 'Inconnu',
+    someone: "Quelqu'un",
+    notif_friend_request: "{name} vous a envoyé une demande d'ami.",
+    notif_friend_request_accepted: "{name} a accepté votre demande d'ami.",
+    notif_new_follower: '{name} a commencé à vous suivre.',
+    notif_post_like: '{name} a aimé votre publication.',
+    notif_comment: '{name} a commenté votre publication.',
+    notif_comment_reply: '{name} a répondu à un commentaire.',
+    notif_post_share: '{name} a partagé votre publication.',
+    notif_new_message: '{name} vous a envoyé un message.',
+    notif_announcement: 'Nouvelle annonce de Zumra.',
+    notif_default: 'Vous avez une nouvelle notification.'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -188,7 +221,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'جارٍ إنشاء الصورة المصغرة...',
     who_can_see: 'من يمكنه رؤية هذا؟', public: 'عام', only_me: 'أنا فقط',
     please_wait: 'يرجى الانتظار...', post: 'نشر',
-    search_conversations: 'ابحث في المحادثات...', say_hello: 'قل مرحبًا 👋', unknown_user: 'غير معروف'
+    search_conversations: 'ابحث في المحادثات...', say_hello: 'قل مرحبًا 👋', unknown_user: 'غير معروف',
+    someone: 'شخص ما',
+    notif_friend_request: '{name} أرسل لك طلب صداقة.',
+    notif_friend_request_accepted: '{name} قبل طلب صداقتك.',
+    notif_new_follower: '{name} بدأ بمتابعتك.',
+    notif_post_like: '{name} أعجب بمنشورك.',
+    notif_comment: '{name} علّق على منشورك.',
+    notif_comment_reply: '{name} ردّ على تعليق.',
+    notif_post_share: '{name} شارك منشورك.',
+    notif_new_message: '{name} أرسل لك رسالة.',
+    notif_announcement: 'إعلان جديد من Zumra.',
+    notif_default: 'لديك إشعار جديد.'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -232,7 +276,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'Ń ṣẹ̀dá àwòrán kékeré...',
     who_can_see: 'Ta ni ó lè rí èyí?', public: 'Gbogbo ènìyàn', only_me: 'Èmi nìkan',
     please_wait: 'Jọ̀wọ́ dúró...', post: 'Fìwéránṣẹ́',
-    search_conversations: 'Wá àwọn ìjíròrò...', say_hello: 'Sọ pé báwo 👋', unknown_user: 'Aláìmọ̀'
+    search_conversations: 'Wá àwọn ìjíròrò...', say_hello: 'Sọ pé báwo 👋', unknown_user: 'Aláìmọ̀',
+    someone: 'Ẹnìkan',
+    notif_friend_request: '{name} fi ìbéèrè ọ̀rẹ́ ránṣẹ́ sí ọ.',
+    notif_friend_request_accepted: '{name} gba ìbéèrè ọ̀rẹ́ rẹ.',
+    notif_new_follower: '{name} bẹ̀rẹ̀ sí í tẹ̀lé ọ.',
+    notif_post_like: '{name} fẹ́ràn ìfìwéránṣẹ́ rẹ.',
+    notif_comment: '{name} sọ èsì lórí ìfìwéránṣẹ́ rẹ.',
+    notif_comment_reply: '{name} dáhùn sí ọ̀rọ̀ kan.',
+    notif_post_share: '{name} pín ìfìwéránṣẹ́ rẹ.',
+    notif_new_message: '{name} fi ìfọ̀rọ̀ránṣẹ́ ránṣẹ́ sí ọ.',
+    notif_announcement: 'Ìkéde tuntun láti Zumra.',
+    notif_default: 'O ní ìfitónilétí tuntun.'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -276,7 +331,18 @@ const translations: Record<Lang, Record<string, string>> = {
     creating_thumbnail: 'Na-emepụta obere foto...',
     who_can_see: 'Ònye pụrụ ịhụ nke a?', public: 'Onye ọ bụla', only_me: 'Naanị m',
     please_wait: 'Biko chere...', post: 'Bipụta',
-    search_conversations: 'Chọọ mkparịta ụka...', say_hello: 'Kelee ya 👋', unknown_user: 'Amaghị'
+    search_conversations: 'Chọọ mkparịta ụka...', say_hello: 'Kelee ya 👋', unknown_user: 'Amaghị',
+    someone: 'Onye',
+    notif_friend_request: '{name} zitere gị arịrịọ enyi.',
+    notif_friend_request_accepted: '{name} nabatara arịrịọ enyi gị.',
+    notif_new_follower: '{name} malitere soro gị.',
+    notif_post_like: '{name} masịrị ederede gị.',
+    notif_comment: '{name} kwuru okwu n’ederede gị.',
+    notif_comment_reply: '{name} zara otu okwu.',
+    notif_post_share: '{name} kesara ederede gị.',
+    notif_new_message: '{name} zitere gị ozi.',
+    notif_announcement: 'Ọkwa ọhụrụ sitere na Zumra.',
+    notif_default: 'Ị nwere ọkwa ọhụrụ.'
   }
 };
 
@@ -325,4 +391,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-    }
+      }
