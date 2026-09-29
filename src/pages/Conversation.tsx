@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
+import { useT } from '@/i18n';
 import {
   fetchMessages,
   sendMessage,
@@ -24,6 +25,7 @@ interface Msg {
 }
 
 export default function Conversation() {
+  const t = useT();
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const { isOffline } = useSettings();
@@ -97,13 +99,13 @@ export default function Conversation() {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
-  if (loading) return <p className="p-6 text-center text-sm text-gray-500">Loading...</p>;
+  if (loading) return <p className="p-6 text-center text-sm text-gray-500">{t('loading')}</p>;
 
   return (
     <div className="flex h-[calc(100vh-3.5rem-4rem)] flex-col">
       <div className="flex items-center gap-2 border-b border-gray-200 p-3 dark:border-gray-800">
-        <Avatar src={otherUser?.avatar_url} name={otherUser?.full_name ?? 'User'} size={32} />
-        <span className="text-sm font-semibold">{otherUser?.full_name ?? 'Conversation'}</span>
+        <Avatar src={otherUser?.avatar_url} name={otherUser?.full_name ?? t('reels.user')} size={32} />
+        <span className="text-sm font-semibold">{otherUser?.full_name ?? t('chat.conversation')}</span>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
@@ -112,14 +114,14 @@ export default function Conversation() {
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-zumra-500 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                {m.reply_to_message_id && <p className="mb-1 text-xs opacity-70">Replying to a message</p>}
+                {m.reply_to_message_id && <p className="mb-1 text-xs opacity-70">{t('chat.replyingToMessage')}</p>}
                 <p>{m.content}</p>
                 <div className="mt-1 flex items-center gap-2 text-[10px] opacity-70">
-                  <span>{m._pending ? (isOffline ? 'Waiting for connection...' : 'Sending...') : new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{m._pending ? (isOffline ? t('waiting_for_connection') : t('sending')) : new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   {mine && !m._pending && (
                     <>
-                      <button onClick={() => setReplyTo(m)}>Reply</button>
-                      <button onClick={() => handleDelete(m.id)}>Delete</button>
+                      <button onClick={() => setReplyTo(m)}>{t('chat.reply')}</button>
+                      <button onClick={() => handleDelete(m.id)}>{t('delete')}</button>
                     </>
                   )}
                 </div>
@@ -133,7 +135,7 @@ export default function Conversation() {
       <div className="border-t border-gray-200 p-3 dark:border-gray-800">
         {replyTo && (
           <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
-            <span>Replying to: {replyTo.content?.slice(0, 40)}</span>
+            <span>{t('chat.replyingTo')} {replyTo.content?.slice(0, 40)}</span>
             <button onClick={() => setReplyTo(null)}>✕</button>
           </div>
         )}
@@ -142,12 +144,12 @@ export default function Conversation() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Message..."
+            placeholder={t('chat.messagePlaceholder')}
             className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
           />
-          <button onClick={handleSend} className="rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">Send</button>
+          <button onClick={handleSend} className="rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('chat.send')}</button>
         </div>
       </div>
     </div>
   );
-}
+    }
