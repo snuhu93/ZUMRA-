@@ -5,8 +5,10 @@ import { getPublicUrl } from '@/services/storage';
 import Avatar from '@/components/Avatar';
 import { Link } from 'react-router-dom';
 import { ThumbsUp, MessageCircle, Share2, Volume2, VolumeX } from 'lucide-react';
+import { useI18n } from '@/i18n';
 
 export default function Reels() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function Reels() {
     } else {
       try {
         await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard');
+        alert(t('reels.linkCopied'));
       } catch {
         // clipboard not available, ignore
       }
@@ -96,7 +98,7 @@ export default function Reels() {
   };
 
   if (!loading && posts.length === 0) {
-    return <p className="p-10 text-center text-sm text-gray-500">No videos yet.</p>;
+    return <p className="p-10 text-center text-sm text-gray-500">{t('reels.noVideos')}</p>;
   }
 
   return (
@@ -110,7 +112,7 @@ export default function Reels() {
           width: 'clamp(36px, 9vw, 40px)',
           height: 'clamp(36px, 9vw, 40px)',
         }}
-        aria-label={muted ? 'Unmute' : 'Mute'}
+        aria-label={muted ? t('reels.unmute') : t('reels.mute')}
       >
         {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
       </button>
@@ -135,9 +137,9 @@ export default function Reels() {
 
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent p-4 pb-6">
               <Link to={`/profile/${post.author?.username}`} className="flex items-center gap-2">
-                <Avatar src={post.author?.avatar_url ?? null} name={post.author?.full_name ?? 'User'} />
+                <Avatar src={post.author?.avatar_url ?? null} name={post.author?.full_name ?? t('reels.user')} />
                 <div>
-                  <p className="text-sm font-semibold text-white">{post.author?.full_name ?? 'User'}</p>
+                  <p className="text-sm font-semibold text-white">{post.author?.full_name ?? t('reels.user')}</p>
                   {post.content && <p className="line-clamp-2 max-w-[70vw] text-xs text-gray-200">{post.content}</p>}
                 </div>
               </Link>
@@ -165,7 +167,7 @@ export default function Reels() {
           </div>
         );
       })}
-      {loading && <p className="p-4 text-center text-xs text-gray-400">Loading...</p>}
+      {loading && <p className="p-4 text-center text-xs text-gray-400">{t('reels.loading')}</p>}
     </div>
   );
-}
+                           }
