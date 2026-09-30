@@ -21,11 +21,13 @@ export default function CreateStatus() {
   const handlePostText = async () => {
     if (!user || !text.trim()) return;
     setSubmitting(true);
+    setError(null);
     try {
       await createTextStatus(user.id, text.trim(), color);
       navigate('/');
-    } catch {
-      setError(t('something_went_wrong'));
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message || t('something_went_wrong'));
     } finally {
       setSubmitting(false);
     }
@@ -35,12 +37,20 @@ export default function CreateStatus() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setSubmitting(true);
+    setError(null);
     try {
-      const { path } = await uploadImage({ file, userId: user.id, bucket: 'post-images', kind: 'status', dataSaver });
+      const { path } = await uploadImage({
+        file,
+        userId: user.id,
+        bucket: 'post-images',
+        kind: 'status',
+        dataSaver,
+      });
       await createImageStatus(user.id, path);
       navigate('/');
-    } catch {
-      setError(t('image_upload_failed'));
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message || t('image_upload_failed'));
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +89,11 @@ export default function CreateStatus() {
         ))}
       </div>
 
-      <button onClick={handlePostText} disabled={submitting || !text.trim()} className="mt-4 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60">
+      <button
+        onClick={handlePostText}
+        disabled={submitting || !text.trim()}
+        className="mt-4 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
+      >
         {submitting ? t('status.posting') : t('status.postText')}
       </button>
 
@@ -89,4 +103,4 @@ export default function CreateStatus() {
       </label>
     </div>
   );
-                              }
+    }
