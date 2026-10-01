@@ -3,8 +3,14 @@ import { compressImage, compressVideo, isVideoTooLarge } from '@/utils/mediaOpti
 
 type Bucket = 'avatars' | 'covers' | 'post-images' | 'post-videos' | 'message-media';
 
+export type VideoStatus =
+  | { step: 'compressing' }
+  | { step: 'uploading' }
+  | { step: 'retrying'; attempt: number; total: number };
+
 const MAX_UPLOAD_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [2000, 4000];
+const MIN_STATUS_MS = 800;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -12,7 +18,7 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 function isRetryable(err: any): boolean {
   const status = Number(err?.statusCode ?? err?.status);
   if (status) return status >= 500 || status === 408 || status === 429;
-  return true; // no HTTP status usually means the request never reached the server
+  return true;
 }
 
 /** Every object is stored under {userId}/... so storage RLS policies can enforce ownership. */
@@ -48,17 +54,21 @@ export async function uploadVideo(params: {
   userId: string;
   dataSaver: boolean;
   onProgress?: (percent: number) => void;
-  onStatus?: (text: string) => void;
+  onStatus?: (status: VideoStatus) => void;
 }): Promise<{ path: string; publicUrl: string }> {
   if (params.file.size / (1024 * 1024) > 150) {
     throw new Error('Video is too large. Please choose a file under 150MB.');
   }
 
-  params.onStatus?.('Compressing video...');
+  params.onStatus?.({ step: 'compressing' });
+  const startedAt = Date.now();
   const file = await compressVideo(params.file, {
     dataSaver: params.dataSaver,
     onProgress: params.onProgress,
   });
+  // Keep the "compressing" status visible long enough to be read
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < MIN_STATUS_MS) await sleep(MIN_STATUS_MS - elapsed);
 
   if (isVideoTooLarge(file, params.dataSaver)) {
     throw new Error(
@@ -71,13 +81,12 @@ export async function uploadVideo(params: {
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
-    // A fresh path per attempt avoids "already exists" conflicts if a previous try half-succeeded
     const path = buildPath(params.userId, file.name);
 
     params.onStatus?.(
       attempt === 1
-        ? 'Uploading video...'
-        : `Connection problem. Retrying (${attempt} of ${MAX_UPLOAD_ATTEMPTS})...`
+        ? { step: 'uploading' }
+        : { step: 'retrying', attempt, total: MAX_UPLOAD_ATTEMPTS }
     );
 
     const { error } = await supabase.storage.from('post-videos').upload(path, file, {
@@ -104,40 +113,61 @@ export async function uploadVideo(params: {
 export function generateVideoThumbnail(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
-    video.preload = 'metadata';
+    const url = URL.createObjectURL(file);
+    let settled = false;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+    };
+    const fail = (message: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(message));
+    };
+
+    // Never hang forever on devices that don't fire the video events
+    const timer = setTimeout(() => fail('Thumbnail timed out'), 8000);
+
+    video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
-    video.src = URL.createObjectURL(file);
+    video.src = url;
 
     video.onloadeddata = () => {
-      video.currentTime = Math.min(0.1, video.duration / 2);
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      video.currentTime = Math.min(0.1, duration / 2);
     };
 
     video.onseeked = () => {
+      if (settled) return;
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        URL.revokeObjectURL(video.src);
-        reject(new Error('Could not create canvas context'));
+        fail('Could not create canvas context');
         return;
       }
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(video.src);
-        if (!blob) {
-          reject(new Error('Could not generate thumbnail'));
-          return;
-        }
-        resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
-      }, 'image/jpeg', 0.8);
+      canvas.toBlob(
+        (blob) => {
+          if (settled) return;
+          if (!blob) {
+            fail('Could not generate thumbnail');
+            return;
+          }
+          settled = true;
+          cleanup();
+          resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        0.8
+      );
     };
 
-    video.onerror = () => {
-      URL.revokeObjectURL(video.src);
-      reject(new Error('Could not load video for thumbnail'));
-    };
+    video.onerror = () => fail('Could not load video for thumbnail');
   });
 }
 
@@ -159,4 +189,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-                                                }
+                                  }
