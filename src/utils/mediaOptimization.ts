@@ -56,6 +56,14 @@ export interface VideoCompressOptions {
   onProgress?: (percent: number) => void;
 }
 
+// Compression runs in real time (the video is played while being recorded),
+// so very large or very long videos are uploaded as they are.
+const MIN_COMPRESS_MB = 3;
+const MAX_COMPRESS_MB = 40;
+const MAX_COMPRESS_SECONDS = 120;
+// If the video is already below this bitrate, re-encoding won't make it smaller.
+const SKIP_BELOW_BITS_PER_SECOND = 2_000_000;
+
 /**
  * Re-compresses a video in the browser before upload. If the video is
  * already small, or compression fails, the original file is returned.
@@ -65,9 +73,9 @@ export async function compressVideo(
   options: VideoCompressOptions
 ): Promise<File> {
   const sizeMB = file.size / (1024 * 1024);
-  if (sizeMB <= 3 || typeof MediaRecorder === 'undefined') {
+  if (sizeMB <= MIN_COMPRESS_MB || sizeMB > MAX_COMPRESS_MB || typeof MediaRecorder === 'undefined') {
     // eslint-disable-next-line no-console
-    console.log('Video compression skipped (small file or no MediaRecorder)');
+    console.log('Video compression skipped (too small, too large, or no MediaRecorder)');
     return file;
   }
   try {
@@ -86,11 +94,31 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
   video.playsInline = true;
   video.preload = 'auto';
 
+  let audioCtx: AudioContext | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
   try {
     await new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => resolve();
       video.onerror = () => reject(new Error('Cannot read video'));
     });
+
+    const hasDuration = Number.isFinite(video.duration) && video.duration > 0;
+    const duration = hasDuration ? video.duration : 60;
+
+    // Skip videos that are too long for real-time recording
+    if (hasDuration && duration > MAX_COMPRESS_SECONDS) {
+      // eslint-disable-next-line no-console
+      console.log('Video compression skipped: video too long');
+      return file;
+    }
+
+    // Skip videos whose bitrate is already low
+    if (hasDuration && (file.size * 8) / duration < SKIP_BELOW_BITS_PER_SECOND) {
+      // eslint-disable-next-line no-console
+      console.log('Video compression skipped: bitrate already low');
+      return file;
+    }
 
     const maxSide = options.dataSaver ? 480 : 720;
     const scale = Math.min(1, maxSide / Math.min(video.videoWidth, video.videoHeight));
@@ -106,7 +134,6 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
     const stream = canvas.captureStream(30);
 
     // Audio: captured into the recording without playing through the speaker
-    let audioCtx: AudioContext | null = null;
     try {
       audioCtx = new AudioContext();
       const source = audioCtx.createMediaElementSource(video);
@@ -149,28 +176,28 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
     const finish = () => {
       if (stopped) return;
       stopped = true;
-      recorder.stop();
+      video.pause();
+      if (recorder.state !== 'inactive') recorder.stop();
     };
     video.onended = () => {
       endedNaturally = true;
+      options.onProgress?.(100);
       finish();
     };
     // Safety net: if something stalls, stop after a reasonable time
-    const timeout = setTimeout(finish, (video.duration * 1.5 + 10) * 1000);
+    timeout = setTimeout(finish, (duration * 1.5 + 10) * 1000);
 
     const draw = () => {
       if (stopped) return;
       ctx.drawImage(video, 0, 0, width, height);
-      if (video.duration) {
-        options.onProgress?.(Math.min(99, Math.round((video.currentTime / video.duration) * 100)));
+      if (hasDuration) {
+        options.onProgress?.(Math.min(99, Math.round((video.currentTime / duration) * 100)));
       }
       requestAnimationFrame(draw);
     };
     await video.play();
     draw();
     await done;
-    clearTimeout(timeout);
-    audioCtx?.close();
 
     // The recording was cut short (e.g. the app went to the background),
     // so keep the original file instead of uploading a truncated video.
@@ -189,9 +216,10 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
 
     const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
     const name = file.name.replace(/\.[^.]+$/, '') + '.' + ext;
-    options.onProgress?.(100);
     return new File([blob], name, { type: blob.type });
   } finally {
+    if (timeout) clearTimeout(timeout);
+    audioCtx?.close().catch(() => undefined);
     URL.revokeObjectURL(url);
   }
 }
