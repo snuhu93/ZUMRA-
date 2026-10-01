@@ -78,22 +78,7 @@ export default function CreatePost() {
           const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
           uploaded.push({ path, type: 'image' });
         } else {
-          let currentStatus = t('preparing_video');
-          setProgress(`${prefix}${currentStatus}`);
-
-          const { path } = await uploadVideo({
-            file: m.file,
-            userId: user.id,
-            dataSaver,
-            onStatus: (s) => {
-              currentStatus = statusText(s);
-              setProgress(`${prefix}${currentStatus}`);
-            },
-            onProgress: (percent) => {
-              setProgress(`${prefix}${currentStatus} ${Math.round(percent)}%`);
-            },
-          });
-
+          // Step 1: create the thumbnail first (from the original file, fast)
           let thumbnailPath: string | undefined;
           try {
             setProgress(`${prefix}${t('creating_thumbnail')}`);
@@ -113,6 +98,24 @@ export default function CreatePost() {
             // If thumbnail generation fails, continue without it
             console.error('Thumbnail failed', e);
           }
+
+          // Step 2: compress, then upload the video
+          let currentStatus = t('preparing_video');
+          setProgress(`${prefix}${currentStatus}`);
+
+          const { path } = await uploadVideo({
+            file: m.file,
+            userId: user.id,
+            dataSaver,
+            onStatus: (s) => {
+              currentStatus = statusText(s);
+              setProgress(`${prefix}${currentStatus}`);
+            },
+            onProgress: (percent) => {
+              setProgress(`${prefix}${currentStatus} ${Math.round(percent)}%`);
+            },
+          });
+
           uploaded.push({ path, type: 'video', thumbnailPath });
         }
       }
@@ -244,4 +247,4 @@ export default function CreatePost() {
       </button>
     </div>
   );
-    }
+                       }
