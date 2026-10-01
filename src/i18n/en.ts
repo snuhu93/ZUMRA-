@@ -21,5 +21,27 @@ export default {
   uploading: 'Uploading...',
   sending: 'Sending...',
   saving: 'Saving...',
-  deleting: 'Deleting...'
+  deleting: 'Deleting...',
+
+  // CreatePost
+  create_post: 'Create post',
+  whats_on_your_mind: "What's on your mind?",
+  who_can_see: 'Who can see this?',
+  public: 'Public',
+  friends: 'Friends',
+  only_me: 'Only me',
+  post: 'Post',
+  please_wait: 'Please wait...',
+  photo: 'Photo',
+  video: 'Video',
+  of: 'of',
+  max_images_error: 'You can upload up to 6 photos.',
+  write_something: 'Write something or add a photo/video.',
+  you_are_offline: "You're offline.",
+  uploading_photo: 'Uploading photo...',
+  preparing_video: 'Preparing video...',
+  compressing_video: 'Compressing video...',
+  uploading_video: 'Uploading video...',
+  retrying_upload: 'Connection problem. Retrying',
+  creating_thumbnail: 'Creating thumbnail...'
 };
