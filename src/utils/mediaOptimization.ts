@@ -65,7 +65,11 @@ export async function compressVideo(
   options: VideoCompressOptions
 ): Promise<File> {
   const sizeMB = file.size / (1024 * 1024);
-  if (sizeMB <= 10 || typeof MediaRecorder === 'undefined') return file;
+  if (sizeMB <= 3 || typeof MediaRecorder === 'undefined') {
+    // eslint-disable-next-line no-console
+    console.log('Video compression skipped (small file or no MediaRecorder)');
+    return file;
+  }
   try {
     return await recompress(file, options);
   } catch (err) {
@@ -119,7 +123,11 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
       'video/webm;codecs=vp8,opus',
       'video/webm',
     ].find((m) => MediaRecorder.isTypeSupported(m));
-    if (!mimeType) return file;
+    if (!mimeType) {
+      // eslint-disable-next-line no-console
+      console.log('Video compression skipped: no supported webm type');
+      return file;
+    }
 
     const recorder = new MediaRecorder(stream, {
       mimeType,
@@ -166,10 +174,18 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
 
     // The recording was cut short (e.g. the app went to the background),
     // so keep the original file instead of uploading a truncated video.
-    if (!endedNaturally) return file;
+    if (!endedNaturally) {
+      // eslint-disable-next-line no-console
+      console.log('Video compression skipped: recording did not finish');
+      return file;
+    }
 
     const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
-    if (blob.size === 0 || blob.size >= file.size) return file;
+    if (blob.size === 0 || blob.size >= file.size) {
+      // eslint-disable-next-line no-console
+      console.log('Video compression skipped: result not smaller than original');
+      return file;
+    }
 
     const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
     const name = file.name.replace(/\.[^.]+$/, '') + '.' + ext;
@@ -178,4 +194,4 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
   } finally {
     URL.revokeObjectURL(url);
   }
-    }
+}
