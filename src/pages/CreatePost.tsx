@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useT } from '@/i18n';
 import { createPost } from '@/services/posts';
-import { uploadImage, uploadVideo, generateVideoThumbnail } from '@/services/storage';
+import { uploadImage, uploadVideo, generateVideoThumbnail, type VideoStatus } from '@/services/storage';
 import type { PrivacyLevel } from '@/types/database';
 
 interface PendingMedia {
@@ -46,6 +46,12 @@ export default function CreatePost() {
     setMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const statusText = (s: VideoStatus) => {
+    if (s.step === 'compressing') return t('compressing_video');
+    if (s.step === 'uploading') return t('uploading_video');
+    return `${t('retrying_upload')} (${s.attempt}/${s.total})`;
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
     if (!content.trim() && media.length === 0) {
@@ -79,9 +85,9 @@ export default function CreatePost() {
             file: m.file,
             userId: user.id,
             dataSaver,
-            onStatus: (text) => {
-              currentStatus = text;
-              setProgress(`${prefix}${text}`);
+            onStatus: (s) => {
+              currentStatus = statusText(s);
+              setProgress(`${prefix}${currentStatus}`);
             },
             onProgress: (percent) => {
               setProgress(`${prefix}${currentStatus} ${Math.round(percent)}%`);
@@ -91,7 +97,10 @@ export default function CreatePost() {
           let thumbnailPath: string | undefined;
           try {
             setProgress(`${prefix}${t('creating_thumbnail')}`);
-            const thumbFile = await generateVideoThumbnail(m.file);
+            const [thumbFile] = await Promise.all([
+              generateVideoThumbnail(m.file),
+              new Promise((r) => setTimeout(r, 600)),
+            ]);
             const { path: thumbPath } = await uploadImage({
               file: thumbFile,
               userId: user.id,
@@ -100,8 +109,9 @@ export default function CreatePost() {
               dataSaver,
             });
             thumbnailPath = thumbPath;
-          } catch {
+          } catch (e) {
             // If thumbnail generation fails, continue without it
+            console.error('Thumbnail failed', e);
           }
           uploaded.push({ path, type: 'video', thumbnailPath });
         }
@@ -234,4 +244,4 @@ export default function CreatePost() {
       </button>
     </div>
   );
-         }
+    }
