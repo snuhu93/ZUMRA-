@@ -63,8 +63,9 @@ export async function fetchSuggestedFriends(userId: string, excludeIds: string[]
     .select('id, username, full_name, avatar_url')
     .neq('id', userId)
     .eq('is_admin', false)
-    .not('id', 'in', `(${[userId, ...excludeIds].join(',') || userId})`)
-    .limit(10);
+    .not('id', 'in', `(${[userId, ...excludeIds].join(',')})`)
+    .order('created_at', { ascending: false })
+    .limit(20);
   if (error) throw error;
   return (data ?? []) as PublicProfileLite[];
 }
@@ -114,4 +115,4 @@ export async function fetchCounts(userId: string) {
     following: following ?? 0,
     posts: posts ?? 0
   };
-}
+                                   }
