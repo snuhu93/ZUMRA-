@@ -34,7 +34,7 @@ const Admin = lazy(() => import('@/pages/Admin'));
 const About = lazy(() => import('@/pages/About'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const ComplaintPage = lazy(() => import('@/pages/ComplaintPage'));
-const AdminComplaints = lazy(() => import('@/pages/admin/AdminComplaints'));
+const AdminComplaints = lazy(() => import('@/pages/AdminComplaints'));
 
 function PageFallback() {
   return (
