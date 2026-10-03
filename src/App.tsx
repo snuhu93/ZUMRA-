@@ -33,6 +33,8 @@ const Report = lazy(() => import('@/pages/Report'));
 const Admin = lazy(() => import('@/pages/Admin'));
 const About = lazy(() => import('@/pages/About'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
+const ComplaintPage = lazy(() => import('@/pages/ComplaintPage'));
+const AdminComplaints = lazy(() => import('@/pages/admin/AdminComplaints'));
 
 function PageFallback() {
   return (
@@ -98,6 +100,7 @@ export default function App() {
                 <Route path="/settings" element={<Protected><Settings /></Protected>} />
                 <Route path="/settings/blocked" element={<Protected><BlockedUsers /></Protected>} />
                 <Route path="/report" element={<Protected><Report /></Protected>} />
+                <Route path="/complaint" element={<Protected><ComplaintPage /></Protected>} />
                 <Route path="/about" element={<Protected><About /></Protected>} />
 
                 <Route
@@ -107,6 +110,19 @@ export default function App() {
                       <AdminRoute>
                         <AppLayout>
                           <Admin />
+                        </AppLayout>
+                      </AdminRoute>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/complaints"
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoute>
+                        <AppLayout>
+                          <AdminComplaints />
                         </AppLayout>
                       </AdminRoute>
                     </ProtectedRoute>
