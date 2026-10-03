@@ -18,15 +18,26 @@ export async function submitComplaint(userId: string, message: string) {
 export async function fetchComplaints(status: string | null) {
   let q = db
     .from('complaints')
-    .select('id, user_id, message, status, created_at, profiles:user_id(username, full_name)')
+    .select('id, user_id, message, status, created_at')
     .order('created_at', { ascending: false });
   if (status) q = q.eq('status', status);
   const { data, error } = await q;
   if (error) throw error;
-  return data as any[];
+
+  const rows = (data ?? []) as any[];
+  const ids = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
+  let people: Record<string, any> = {};
+  if (ids.length) {
+    const { data: ps } = await db
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', ids);
+    for (const p of (ps ?? []) as any[]) people[p.id] = p;
+  }
+  return rows.map((r) => ({ ...r, profiles: people[r.user_id] ?? null }));
 }
 
 export async function setComplaintStatus(id: string, status: 'new' | 'seen' | 'resolved') {
   const { error } = await db.from('complaints').update({ status }).eq('id', id);
   if (error) throw error;
-    }
+}
