@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { fetchComplaints, setComplaintStatus } from '@/services/complaints';
+import { useT } from '@/i18n';
 
 export default function AdminComplaints() {
+  const t = useT();
   const [items, setItems] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -28,39 +30,59 @@ export default function AdminComplaints() {
     resolved: 'bg-green-600',
   };
 
+  const statusLabel: Record<string, string> = {
+    new: t('complaint.new'),
+    seen: t('complaint.seen'),
+    resolved: t('complaint.resolved'),
+  };
+
   return (
     <div className="p-4">
-      <h1 className="mb-3 text-lg font-bold">📩 Korafe-korafe</h1>
+      <h1 className="mb-3 text-lg font-bold">📩 {t('complaint.adminTitle')}</h1>
       <select
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         className="mb-3 rounded-lg border border-gray-300 bg-transparent p-2 text-sm dark:border-gray-700"
       >
-        <option value="">Duka</option>
-        <option value="new">Sabbi</option>
-        <option value="seen">An gani</option>
-        <option value="resolved">An warware</option>
+        <option value="">{t('complaint.all')}</option>
+        <option value="new">{t('complaint.new')}</option>
+        <option value="seen">{t('complaint.seen')}</option>
+        <option value="resolved">{t('complaint.resolved')}</option>
       </select>
 
       {loading && <p className="text-sm text-gray-500">...</p>}
-      {!loading && items.length === 0 && <p className="text-sm text-gray-500">Babu korafi.</p>}
+      {!loading && items.length === 0 && (
+        <p className="text-sm text-gray-500">{t('complaint.none')}</p>
+      )}
 
       {items.map((c) => (
         <div key={c.id} className="mb-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
           <div className="flex items-center gap-2 text-xs">
-            <span className={`rounded px-2 py-0.5 text-white ${color[c.status]}`}>{c.status}</span>
+            <span className={`rounded px-2 py-0.5 text-white ${color[c.status]}`}>
+              {statusLabel[c.status] ?? c.status}
+            </span>
             <span className="text-gray-500">{new Date(c.created_at).toLocaleString()}</span>
           </div>
           <p className="mt-2 whitespace-pre-wrap text-sm">{c.message}</p>
           <p className="mt-1 text-xs text-gray-500">
-            {c.profiles?.full_name ?? 'User'} (@{c.profiles?.username ?? c.user_id})
+            {c.profiles?.full_name ?? t('unknown_user')} (@{c.profiles?.username ?? c.user_id})
           </p>
           <div className="mt-2 flex gap-2">
-            <button onClick={() => update(c.id, 'seen')} className="rounded-lg border border-gray-300 px-3 py-1 text-xs dark:border-gray-700">An gani</button>
-            <button onClick={() => update(c.id, 'resolved')} className="rounded-lg bg-zumra-500 px-3 py-1 text-xs text-white">An warware</button>
+            <button
+              onClick={() => update(c.id, 'seen')}
+              className="rounded-lg border border-gray-300 px-3 py-1 text-xs dark:border-gray-700"
+            >
+              {t('complaint.markSeen')}
+            </button>
+            <button
+              onClick={() => update(c.id, 'resolved')}
+              className="rounded-lg bg-zumra-500 px-3 py-1 text-xs text-white"
+            >
+              {t('complaint.markResolved')}
+            </button>
           </div>
         </div>
       ))}
     </div>
   );
-    }
+}
