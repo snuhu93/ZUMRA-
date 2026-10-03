@@ -11,10 +11,11 @@ import {
   type AdminUserRow,
 } from '@/services/admin';
 import AdminAnnouncements from '@/components/AdminAnnouncements';
+import AdminComplaints from '@/pages/AdminComplaints';
 import Avatar from '@/components/Avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 
-type Tab = 'stats' | 'users' | 'posts' | 'reports' | 'announcements';
+type Tab = 'stats' | 'users' | 'posts' | 'reports' | 'complaints' | 'announcements';
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('stats');
@@ -81,12 +82,12 @@ export default function Admin() {
 
   return (
     <div>
-      <div className="flex border-b border-gray-200 dark:border-gray-800">
-        {(['stats', 'users', 'posts', 'reports', 'announcements'] as Tab[]).map((t) => (
+      <div className="flex overflow-x-auto whitespace-nowrap border-b border-gray-200 dark:border-gray-800">
+        {(['stats', 'users', 'posts', 'reports', 'complaints', 'announcements'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-xs font-medium capitalize ${tab === t ? 'border-b-2 border-zumra-500 text-zumra-500' : 'text-gray-500'}`}
+            className={`shrink-0 px-4 py-3 text-xs font-medium capitalize ${tab === t ? 'border-b-2 border-zumra-500 text-zumra-500' : 'text-gray-500'}`}
           >
             {t}
           </button>
@@ -211,7 +212,9 @@ export default function Admin() {
         </div>
       )}
 
+      {tab === 'complaints' && <AdminComplaints />}
+
       {tab === 'announcements' && <AdminAnnouncements />}
     </div>
   );
-        }
+    }
