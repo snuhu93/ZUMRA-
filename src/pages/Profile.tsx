@@ -231,7 +231,7 @@ export default function ProfilePage() {
               onClick={() => navigate('/complaint')}
               className="w-full rounded-lg bg-zumra-500 px-4 py-3 text-sm font-semibold text-white"
             >
-              📩 Aika Koke / Send Complaint
+              {t('profile.sendComplaint')}
             </button>
           ) : (
             <>
@@ -357,4 +357,4 @@ export default function ProfilePage() {
       )}
     </div>
   );
-  }
+                                                    }
