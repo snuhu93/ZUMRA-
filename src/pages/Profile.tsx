@@ -178,9 +178,6 @@ export default function ProfilePage() {
   if (loading) return <SkeletonPost />;
   if (!profile) return <p className="p-6 text-center text-sm text-gray-500">{t('profile_not_found')}</p>;
 
-  // Official admin accounts do not accept friend requests or follows
-  const canFriendOrFollow = !profile.is_admin;
-
   const friendLabel = relationship.isFriend
     ? t('friends_status')
     : relationship.requestSentId
@@ -225,25 +222,27 @@ export default function ProfilePage() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {isOwnProfile ? (
-            <button onClick={() => navigate('/profile/edit')} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('edit_profile')}</button>
+            <>
+              <button onClick={() => navigate('/profile/edit')} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('edit_profile')}</button>
+              <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">{t('share')}</button>
+            </>
+          ) : profile.is_admin ? (
+            <button
+              onClick={() => navigate('/complaint')}
+              className="w-full rounded-lg bg-zumra-500 px-4 py-3 text-sm font-semibold text-white"
+            >
+              📩 Aika Koke / Send Complaint
+            </button>
           ) : (
             <>
-              {canFriendOrFollow && (
-                <>
-                  <button onClick={handleFriendAction} disabled={busy} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{friendLabel}</button>
-                  <button onClick={handleFollow} disabled={followBusy} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-60 dark:border-gray-700">
-                    {relationship.isFollowing ? t('following') : t('follow')}
-                  </button>
-                </>
-              )}
+              <button onClick={handleFriendAction} disabled={busy} className="rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{friendLabel}</button>
+              <button onClick={handleFollow} disabled={followBusy} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-60 dark:border-gray-700">
+                {relationship.isFollowing ? t('following') : t('follow')}
+              </button>
               <button type="button" onClick={handleMessage} disabled={messageBusy} className="relative z-10 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700 disabled:opacity-60">
                 {messageBusy ? '...' : t('message')}
               </button>
-            </>
-          )}
-          <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">{t('share')}</button>
-          {!isOwnProfile && (
-            <>
+              <button onClick={handleShareProfile} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-700">{t('share')}</button>
               <button onClick={() => navigate(`/report?type=user&id=${profile.id}`)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">{t('report')}</button>
               <button onClick={handleBlock} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-red-600 dark:border-gray-700">{t('block')}</button>
             </>
@@ -358,4 +357,4 @@ export default function ProfilePage() {
       )}
     </div>
   );
-    }
+  }
