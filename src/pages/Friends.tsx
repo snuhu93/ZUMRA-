@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useT } from '@/i18n';
+import { supabase } from '@/lib/supabaseClient';
 import {
   fetchIncomingRequests,
   fetchFriends,
@@ -24,7 +25,7 @@ export default function Friends() {
   const [requests, setRequests] = useState<any[]>([]);
   const [friends, setFriends] = useState<PublicProfileLite[]>([]);
   const [suggested, setSuggested] = useState<PublicProfileLite[]>([]);
-  // userId -> id of the friend request that was sent to them
+  // userId -> id of the friend request that was sent to them (in this session)
   const [sentMap, setSentMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -33,32 +34,29 @@ export default function Friends() {
     if (!user) return;
     setLoading(true);
     try {
-      const [reqs, fr] = await Promise.all([
+      const [reqs, fr, sentRes] = await Promise.all([
         fetchIncomingRequests(user.id),
-        fetchFriends(user.id)
+        fetchFriends(user.id),
+        supabase
+          .from('friend_requests')
+          .select('receiver_id')
+          .eq('sender_id', user.id)
+          .eq('status', 'pending')
       ]);
+      if (sentRes.error) throw sentRes.error;
+
       setRequests(reqs);
       setFriends(fr);
-      const excludeIds = [...fr.map((f) => f.id), ...reqs.map((r: any) => r.sender.id)];
+
+      const sentIds = (sentRes.data ?? []).map((r: any) => r.receiver_id as string);
+      const excludeIds = [
+        ...fr.map((f) => f.id),
+        ...reqs.map((r: any) => r.sender.id),
+        ...sentIds
+      ];
       const sug = await fetchSuggestedFriends(user.id, excludeIds);
       setSuggested(sug);
-
-      // Find who already has a pending request, so we can show "Request Sent"
-      const rels = await Promise.all(
-        sug.map(async (s) => {
-          try {
-            const rel = await getRelationshipStatus(user.id, s.id);
-            return [s.id, rel.requestSentId] as const;
-          } catch {
-            return [s.id, null] as const;
-          }
-        })
-      );
-      const map: Record<string, string> = {};
-      for (const [id, reqId] of rels) {
-        if (reqId) map[id] = reqId;
-      }
-      setSentMap(map);
+      setSentMap({});
     } catch (err) {
       console.error('Friends load error:', err);
     } finally {
@@ -235,4 +233,4 @@ export default function Friends() {
       )}
     </div>
   );
-    }
+          }
