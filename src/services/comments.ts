@@ -10,13 +10,15 @@ export interface CommentRow {
   content: string;
   like_count: number;
   created_at: string;
+  is_pinned: boolean;
+  edited_at: string | null;
   author: { id: string; username: string; full_name: string; avatar_url: string | null } | null;
 }
 
 export async function fetchComments(postId: string, cursor: string | null) {
   let query = supabase
     .from('comments')
-    .select(`id, post_id, author_id, parent_comment_id, content, like_count, created_at,
+    .select(`id, post_id, author_id, parent_comment_id, content, like_count, created_at, is_pinned, edited_at,
       author:profiles!comments_author_id_fkey(id, username, full_name, avatar_url)`)
     .eq('post_id', postId)
     .eq('is_deleted', false)
@@ -48,6 +50,16 @@ export async function addComment(params: { postId: string; authorId: string; con
   return data.id as string;
 }
 
+export async function editComment(commentId: string, content: string) {
+  const { error } = await supabase.rpc('edit_comment', { p_comment_id: commentId, p_content: content });
+  if (error) throw error;
+}
+
+export async function pinComment(commentId: string, pinned: boolean) {
+  const { error } = await supabase.rpc('pin_comment', { p_comment_id: commentId, p_pinned: pinned });
+  if (error) throw error;
+}
+
 export async function deleteComment(commentId: string) {
   const { error } = await supabase.from('comments').update({ is_deleted: true }).eq('id', commentId);
   if (error) throw error;
@@ -61,4 +73,4 @@ export async function toggleCommentLike(commentId: string, userId: string, curre
     const { error } = await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId });
     if (error) throw error;
   }
-}
+                               }
