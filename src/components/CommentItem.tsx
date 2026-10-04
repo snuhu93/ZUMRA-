@@ -33,7 +33,7 @@ export default function CommentItem({ comment, onReply, onDeleted }: { comment: 
       <div className="flex-1">
         <div className="rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800">
           <Link to={`/profile/${comment.author?.username}`} className="text-xs font-semibold">{comment.author?.full_name}</Link>
-          <p className="text-sm">{comment.content}</p>
+          <p className="selectable text-sm">{comment.content}</p>
         </div>
         <div className="mt-1 flex gap-3 pl-3 text-xs text-gray-500 dark:text-gray-400">
           <button onClick={handleLike} className={liked ? 'font-semibold text-zumra-600' : ''}>Like{likeCount > 0 ? ` (${likeCount})` : ''}</button>
@@ -43,4 +43,4 @@ export default function CommentItem({ comment, onReply, onDeleted }: { comment: 
       </div>
     </div>
   );
-}
+      }
