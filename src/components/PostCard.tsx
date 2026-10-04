@@ -272,10 +272,10 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           className="mt-3 flex min-h-[14rem] items-center justify-center p-6"
           style={{ backgroundColor: post.background_color ?? undefined }}
         >
-          <p className="whitespace-pre-wrap break-words text-center text-xl font-bold text-white">{post.content}</p>
+          <p className="selectable whitespace-pre-wrap break-words text-center text-xl font-bold text-white">{post.content}</p>
         </div>
       ) : (
-        post.content && <p className="mt-3 whitespace-pre-wrap px-4 text-sm">{post.content}</p>
+        post.content && <p className="selectable mt-3 whitespace-pre-wrap px-4 text-sm">{post.content}</p>
       )}
 
       {sortedMedia.length > 0 && (
