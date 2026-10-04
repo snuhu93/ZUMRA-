@@ -30,6 +30,13 @@ export default function PostDetail() {
     }
   }, [postId, user?.id]);
 
+  // Reload only the comments (no skeleton flicker), used after edit/pin
+  const refreshComments = useCallback(async () => {
+    if (!postId) return;
+    const c = await fetchComments(postId, null);
+    setComments(c);
+  }, [postId]);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -51,26 +58,43 @@ export default function PostDetail() {
   if (loading) return <SkeletonPost />;
   if (!post) return <p className="p-6 text-center text-sm text-gray-500">This post is no longer available.</p>;
 
+  const isPostOwner = user?.id === post.author_id;
+
+  // Pinned comment goes first; the rest keep their order (sort is stable)
+  const topLevel = comments
+    .filter((c) => !c.parent_comment_id)
+    .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned));
+
   return (
     <div>
       <PostCard post={post} onChanged={load} />
       <div className="bg-white px-4 pb-4 dark:bg-gray-900">
         <h2 className="mb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Comments</h2>
         {comments.length === 0 && <p className="py-4 text-center text-sm text-gray-400">No comments yet. Be the first to reply.</p>}
-        {comments
-          .filter((c) => !c.parent_comment_id)
-          .map((c) => (
-            <div key={c.id}>
-              <CommentItem comment={c} onReply={setReplyTo} onDeleted={load} />
-              {comments
-                .filter((r) => r.parent_comment_id === c.id)
-                .map((r) => (
-                  <div key={r.id} className="ml-8">
-                    <CommentItem comment={r} onReply={setReplyTo} onDeleted={load} />
-                  </div>
-                ))}
-            </div>
-          ))}
+        {topLevel.map((c) => (
+          <div key={c.id}>
+            <CommentItem
+              comment={c}
+              onReply={setReplyTo}
+              onDeleted={load}
+              onChanged={refreshComments}
+              isPostOwner={isPostOwner}
+            />
+            {comments
+              .filter((r) => r.parent_comment_id === c.id)
+              .map((r) => (
+                <div key={r.id} className="ml-8">
+                  <CommentItem
+                    comment={r}
+                    onReply={setReplyTo}
+                    onDeleted={load}
+                    onChanged={refreshComments}
+                    isPostOwner={isPostOwner}
+                  />
+                </div>
+              ))}
+          </div>
+        ))}
       </div>
 
       <div className="sticky bottom-16 flex items-center gap-2 border-t border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
@@ -89,4 +113,4 @@ export default function PostDetail() {
       </div>
     </div>
   );
-}
+  }
