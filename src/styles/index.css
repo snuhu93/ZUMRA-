@@ -32,6 +32,20 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Disable text selection on the app UI so it feels like a real app */
+html, body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Allow selection only where it makes sense */
+input, textarea, [contenteditable="true"], .selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* Skeleton loader shimmer -- lightweight, no heavy animation libraries */
 .skeleton {
   @apply bg-gray-200 dark:bg-gray-700 rounded-md relative overflow-hidden;
