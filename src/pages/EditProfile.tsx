@@ -8,10 +8,21 @@ import Avatar from '@/components/Avatar';
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
 
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT Abuja', 'Gombe',
+  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+  'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto',
+  'Taraba', 'Yobe', 'Zamfara'
+];
+
+type AreaFields = { state?: string | null; lga?: string | null; neighborhood?: string | null };
+
 export default function EditProfile() {
   const { user, profile, refreshProfile } = useAuth();
   const { dataSaver } = useSettings();
   const navigate = useNavigate();
+  const area = (profile ?? {}) as AreaFields;
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [username, setUsername] = useState(profile?.username ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -19,6 +30,9 @@ export default function EditProfile() {
   const [website, setWebsite] = useState(profile?.website ?? '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '');
   const [coverUrl, setCoverUrl] = useState(profile?.cover_url ?? '');
+  const [stateName, setStateName] = useState(area.state ?? '');
+  const [lga, setLga] = useState(area.lga ?? '');
+  const [neighborhood, setNeighborhood] = useState(area.neighborhood ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +93,9 @@ export default function EditProfile() {
         website: website.trim() || null,
         avatar_url: avatarUrl || null,
         cover_url: coverUrl || null,
+        state: stateName.trim() || null,
+        lga: lga.trim() || null,
+        neighborhood: neighborhood.trim() || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
@@ -95,6 +112,9 @@ export default function EditProfile() {
     await refreshProfile();
     navigate('/profile');
   };
+
+  const fieldClass =
+    'w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900';
 
   return (
     <div className="p-4">
@@ -116,7 +136,7 @@ export default function EditProfile() {
       </div>
 
       <div className="space-y-3">
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
+        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className={fieldClass} />
 
         <div className="flex items-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
           <span className="pl-2.5 text-sm text-gray-400">@</span>
@@ -129,9 +149,36 @@ export default function EditProfile() {
           />
         </div>
 
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Bio" maxLength={300} rows={3} className="w-full resize-none rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
-        <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Bio" maxLength={300} rows={3} className={`${fieldClass} resize-none`} />
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location" className={fieldClass} />
+        <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" className={fieldClass} />
+      </div>
+
+      <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+        <h2 className="text-sm font-semibold">Unguwata (My Area)</h2>
+        <p className="mb-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Ana amfani da wannan wajen nuna maka labaran unguwarka. / Used to show you news from your area.
+        </p>
+        <div className="space-y-3">
+          <select value={stateName} onChange={(e) => setStateName(e.target.value)} className={fieldClass}>
+            <option value="">Jiha / State</option>
+            {NIGERIAN_STATES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <input
+            value={lga}
+            onChange={(e) => setLga(e.target.value)}
+            placeholder="Ƙaramar hukuma / Local Government (misali: Kaduna North)"
+            className={fieldClass}
+          />
+          <input
+            value={neighborhood}
+            onChange={(e) => setNeighborhood(e.target.value)}
+            placeholder="Unguwa / Neighborhood (misali: Unguwan Rimi)"
+            className={fieldClass}
+          />
+        </div>
       </div>
 
       <button onClick={handleSave} disabled={saving} className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60">
