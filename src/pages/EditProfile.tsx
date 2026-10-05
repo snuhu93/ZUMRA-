@@ -87,7 +87,7 @@ export default function EditProfile() {
     }
     let cancelled = false;
     (supabase as any)
-      .from('ng_areas')
+      .from('world_states')
       .select('state')
       .eq('country', country)
       .limit(5000)
