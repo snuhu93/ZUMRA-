@@ -20,6 +20,16 @@ export interface FeedPost {
   saved_by_me?: boolean;
 }
 
+/** The user's home area, taken from their profile. */
+export interface LocalArea {
+  state: string | null;
+  lga: string | null;
+  neighborhood: string | null;
+}
+
+/** How narrow the local feed is: unguwa (neighborhood), ƙaramar hukuma (lga) or jiha (state). */
+export type LocalLevel = 'neighborhood' | 'lga' | 'state';
+
 /** Fetch one page of the home feed, newest first, cursor-based on created_at. */
 export async function fetchFeed(cursor: string | null, userId: string | null): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
   let query = supabase
@@ -33,6 +43,60 @@ export async function fetchFeed(cursor: string | null, userId: string | null): P
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
 
+  if (cursor) query = query.lt('created_at', cursor);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  const posts = (data ?? []) as unknown as FeedPost[];
+
+  if (userId && posts.length) {
+    const ids = posts.map((p) => p.id);
+    const [{ data: likes }, { data: saves }] = await Promise.all([
+      supabase.from('post_likes').select('post_id').eq('user_id', userId).in('post_id', ids),
+      supabase.from('saved_posts').select('post_id').eq('user_id', userId).in('post_id', ids)
+    ]);
+    const likedSet = new Set(likes?.map((l) => l.post_id));
+    const savedSet = new Set(saves?.map((s) => s.post_id));
+    posts.forEach((p) => {
+      p.liked_by_me = likedSet.has(p.id);
+      p.saved_by_me = savedSet.has(p.id);
+    });
+  }
+
+  const nextCursor = posts.length === PAGE_SIZE ? posts[posts.length - 1].created_at : null;
+  return { posts, nextCursor };
+}
+
+/** Fetch one page of posts from the user's own area (unguwa / ƙaramar hukuma / jiha), newest first. */
+export async function fetchLocalFeed(
+  cursor: string | null,
+  userId: string | null,
+  area: LocalArea,
+  level: LocalLevel
+): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
+  const state = area.state?.trim() || null;
+  const lga = area.lga?.trim() || null;
+  const neighborhood = area.neighborhood?.trim() || null;
+
+  // If the user has not set the part of the area needed for this level, there is nothing to show
+  if (!state) return { posts: [], nextCursor: null };
+  if ((level === 'lga' || level === 'neighborhood') && !lga) return { posts: [], nextCursor: null };
+  if (level === 'neighborhood' && !neighborhood) return { posts: [], nextCursor: null };
+
+  let query = supabase
+    .from('posts')
+    .select(`
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
+      author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
+      post_media(id, media_type, storage_path, thumbnail_path, position)
+    `)
+    .eq('is_deleted', false)
+    .ilike('state', state);
+
+  if (level === 'lga' || level === 'neighborhood') query = query.ilike('lga', lga as string);
+  if (level === 'neighborhood') query = query.ilike('neighborhood', neighborhood as string);
+
+  query = query.order('created_at', { ascending: false }).limit(PAGE_SIZE);
   if (cursor) query = query.lt('created_at', cursor);
 
   const { data, error } = await query;
@@ -230,4 +294,4 @@ export async function sharePost(originalPostId: string, userId: string, comment:
     await supabase.from('notifications').insert({ recipient_id: original.author_id, actor_id: userId, type: 'post_share', entity_id: originalPostId });
   }
   return post.id as string;
-      }
+           }
