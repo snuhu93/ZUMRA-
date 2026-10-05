@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -16,7 +16,15 @@ const NIGERIAN_STATES = [
   'Taraba', 'Yobe', 'Zamfara'
 ];
 
-type AreaFields = { state?: string | null; lga?: string | null; neighborhood?: string | null };
+type AreaFields = {
+  state?: string | null;
+  lga?: string | null;
+  ward?: string | null;
+  neighborhood?: string | null;
+};
+
+const withCurrent = (options: string[], current: string) =>
+  current && !options.includes(current) ? [current, ...options] : options;
 
 export default function EditProfile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -32,9 +40,73 @@ export default function EditProfile() {
   const [coverUrl, setCoverUrl] = useState(profile?.cover_url ?? '');
   const [stateName, setStateName] = useState(area.state ?? '');
   const [lga, setLga] = useState(area.lga ?? '');
+  const [ward, setWard] = useState(area.ward ?? '');
   const [neighborhood, setNeighborhood] = useState(area.neighborhood ?? '');
+  const [lgaOptions, setLgaOptions] = useState<string[]>([]);
+  const [wardOptions, setWardOptions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load Local Governments when the state changes
+  useEffect(() => {
+    if (!stateName) {
+      setLgaOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (supabase as any)
+      .from('ng_areas')
+      .select('lga')
+      .eq('state', stateName)
+      .limit(3000)
+      .then(({ data }: { data: { lga: string }[] | null }) => {
+        if (cancelled) return;
+        const list = Array.from(new Set((data ?? []).map((r) => r.lga))).sort((a, b) =>
+          a.localeCompare(b)
+        );
+        setLgaOptions(list);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stateName]);
+
+  // Load wards when the Local Government changes
+  useEffect(() => {
+    if (!stateName || !lga) {
+      setWardOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (supabase as any)
+      .from('ng_areas')
+      .select('ward')
+      .eq('state', stateName)
+      .eq('lga', lga)
+      .not('ward', 'is', null)
+      .limit(500)
+      .then(({ data }: { data: { ward: string }[] | null }) => {
+        if (cancelled) return;
+        const list = Array.from(new Set((data ?? []).map((r) => r.ward))).sort((a, b) =>
+          a.localeCompare(b)
+        );
+        setWardOptions(list);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stateName, lga]);
+
+  const handleStateChange = (value: string) => {
+    setStateName(value);
+    setLga('');
+    setWard('');
+  };
+
+  const handleLgaChange = (value: string) => {
+    setLga(value);
+    setWard('');
+  };
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>, kind: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
@@ -95,9 +167,10 @@ export default function EditProfile() {
         cover_url: coverUrl || null,
         state: stateName.trim() || null,
         lga: lga.trim() || null,
+        ward: ward.trim() || null,
         neighborhood: neighborhood.trim() || null,
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', user.id);
 
     setSaving(false);
@@ -160,18 +233,45 @@ export default function EditProfile() {
           Ana amfani da wannan wajen nuna maka labaran unguwarka. / Used to show you news from your area.
         </p>
         <div className="space-y-3">
-          <select value={stateName} onChange={(e) => setStateName(e.target.value)} className={fieldClass}>
+          <select value={stateName} onChange={(e) => handleStateChange(e.target.value)} className={fieldClass}>
             <option value="">Jiha / State</option>
             {NIGERIAN_STATES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <input
-            value={lga}
-            onChange={(e) => setLga(e.target.value)}
-            placeholder="Ƙaramar hukuma / Local Government (misali: Kaduna North)"
-            className={fieldClass}
-          />
+
+          {lgaOptions.length > 0 ? (
+            <select value={lga} onChange={(e) => handleLgaChange(e.target.value)} className={fieldClass}>
+              <option value="">Ƙaramar hukuma / Local Government</option>
+              {withCurrent(lgaOptions, lga).map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={lga}
+              onChange={(e) => handleLgaChange(e.target.value)}
+              placeholder="Ƙaramar hukuma / Local Government (misali: Kaduna North)"
+              className={fieldClass}
+            />
+          )}
+
+          {wardOptions.length > 0 ? (
+            <select value={ward} onChange={(e) => setWard(e.target.value)} className={fieldClass}>
+              <option value="">Mazaɓa / Ward</option>
+              {withCurrent(wardOptions, ward).map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={ward}
+              onChange={(e) => setWard(e.target.value)}
+              placeholder="Mazaɓa / Ward"
+              className={fieldClass}
+            />
+          )}
+
           <input
             value={neighborhood}
             onChange={(e) => setNeighborhood(e.target.value)}
@@ -186,4 +286,4 @@ export default function EditProfile() {
       </button>
     </div>
   );
-  }
+                     }
