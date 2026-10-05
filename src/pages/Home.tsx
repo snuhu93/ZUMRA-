@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchFeed, type FeedPost } from '@/services/posts';
+import { fetchFeed, fetchLocalFeed, type FeedPost, type LocalLevel } from '@/services/posts';
 import PostCard from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import StatusBar from '@/components/StatusBar';
@@ -10,6 +10,9 @@ import WelcomeModal from '@/components/WelcomeModal';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Image as ImageIcon } from 'lucide-react';
 import { useT } from '@/i18n';
+
+type AreaFields = { state?: string | null; lga?: string | null; neighborhood?: string | null };
+type FeedTab = 'all' | 'local';
 
 // "What's on your mind?" composer bar (Facebook style)
 function CreatePostBar() {
@@ -44,43 +47,65 @@ function CreatePostBar() {
 
 export default function Home() {
   const t = useT();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+
+  const area = (profile ?? {}) as AreaFields;
+  const state = area.state ?? '';
+  const lga = area.lga ?? '';
+  const neighborhood = area.neighborhood ?? '';
+
+  const [tab, setTab] = useState<FeedTab>('all');
+  const [level, setLevel] = useState<LocalLevel>('neighborhood');
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const initialLoadDone = useRef(false);
+  const [error, setError] = useState(false);
+  const requestId = useRef(0);
+
+  const fetchPage = useCallback(
+    (pageCursor: string | null) => {
+      if (tab === 'all') return fetchFeed(pageCursor, user?.id ?? null);
+      return fetchLocalFeed(
+        pageCursor,
+        user?.id ?? null,
+        { state: state || null, lga: lga || null, neighborhood: neighborhood || null },
+        level
+      );
+    },
+    [tab, level, state, lga, neighborhood, user?.id]
+  );
 
   const loadInitial = useCallback(async () => {
+    const reqId = ++requestId.current;
     setLoading(true);
-    setError(null);
+    setError(false);
     try {
-      const { posts: page, nextCursor } = await fetchFeed(null, user?.id ?? null);
+      const { posts: page, nextCursor } = await fetchPage(null);
+      if (reqId !== requestId.current) return;
       setPosts(page);
       setCursor(nextCursor);
       setHasMore(!!nextCursor);
     } catch {
-      setError(t('feed_error'));
+      if (reqId === requestId.current) setError(true);
     } finally {
-      setLoading(false);
+      if (reqId === requestId.current) setLoading(false);
     }
-  }, [user?.id, t]);
+  }, [fetchPage]);
 
   useEffect(() => {
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true;
-      loadInitial();
-    }
+    loadInitial();
   }, [loadInitial]);
 
   const loadMore = useCallback(async () => {
     if (!cursor || loadingMore) return;
+    const reqId = requestId.current;
     setLoadingMore(true);
     try {
-      const { posts: page, nextCursor } = await fetchFeed(cursor, user?.id ?? null);
+      const { posts: page, nextCursor } = await fetchPage(cursor);
+      if (reqId !== requestId.current) return;
       setPosts((prev) => [...prev, ...page]);
       setCursor(nextCursor);
       setHasMore(!!nextCursor);
@@ -89,9 +114,32 @@ export default function Home() {
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, loadingMore, user?.id]);
+  }, [cursor, loadingMore, fetchPage]);
 
   const sentinelRef = useInfiniteScroll(loadMore, hasMore && !loading);
+
+  const openLocalTab = () => {
+    if (tab === 'local') return;
+    // Start with the narrowest area the user has filled in
+    setLevel(neighborhood ? 'neighborhood' : lga ? 'lga' : 'state');
+    setTab('local');
+  };
+
+  const showAreaPrompt = tab === 'local' && !state;
+
+  const tabClass = (active: boolean) =>
+    `flex-1 py-2.5 text-center text-sm font-semibold ${
+      active
+        ? 'border-b-2 border-zumra-600 text-zumra-600'
+        : 'text-gray-500 dark:text-gray-400'
+    }`;
+
+  const chipClass = (active: boolean, disabled: boolean) =>
+    `rounded-full px-3 py-1 text-xs font-semibold ${
+      active
+        ? 'bg-zumra-600 text-white'
+        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+    } ${disabled ? 'opacity-40' : ''}`;
 
   return (
     <div>
@@ -101,7 +149,44 @@ export default function Home() {
 
       <CreatePostBar />
 
-      {loading && (
+      <div className="flex border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <button onClick={() => setTab('all')} className={tabClass(tab === 'all')}>Duka</button>
+        <button onClick={openLocalTab} className={tabClass(tab === 'local')}>Unguwata</button>
+      </div>
+
+      {tab === 'local' && !!state && (
+        <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
+          <button
+            onClick={() => setLevel('neighborhood')}
+            disabled={!neighborhood || !lga}
+            className={chipClass(level === 'neighborhood', !neighborhood || !lga)}
+          >
+            Unguwa
+          </button>
+          <button
+            onClick={() => setLevel('lga')}
+            disabled={!lga}
+            className={chipClass(level === 'lga', !lga)}
+          >
+            Ƙaramar hukuma
+          </button>
+          <button onClick={() => setLevel('state')} className={chipClass(level === 'state', false)}>
+            Jiha
+          </button>
+        </div>
+      )}
+
+      {showAreaPrompt && (
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>Ba ka saka jiharka da unguwarka ba tukuna.</p>
+          <p className="mt-1 text-xs">Ka je Profile, ka danna Edit Profile, sannan ka cika Unguwata.</p>
+          <button onClick={() => navigate('/profile')} className="mt-3 block w-full font-semibold text-zumra-600">
+            Je Profile
+          </button>
+        </div>
+      )}
+
+      {!showAreaPrompt && loading && (
         <div>
           <SkeletonPost />
           <SkeletonPost />
@@ -109,24 +194,24 @@ export default function Home() {
         </div>
       )}
 
-      {!loading && error && (
+      {!showAreaPrompt && !loading && error && (
         <div className="p-6 text-center text-sm text-gray-500">
-          {error}
+          {t('feed_error')}
           <button onClick={loadInitial} className="mt-2 block w-full text-zumra-600 font-semibold">{t('try_again')}</button>
         </div>
       )}
 
-      {!loading && !error && posts.length === 0 && (
+      {!showAreaPrompt && !loading && !error && posts.length === 0 && (
         <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
-          {t('no_posts_yet')}
+          {tab === 'local' ? 'Babu posts a wannan yankin tukuna. Ka zama na farko!' : t('no_posts_yet')}
           <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">{t('create_first_post')}</button>
         </div>
       )}
 
-      {!loading && posts.map((post) => <PostCard key={post.id} post={post} onChanged={loadInitial} />)}
+      {!showAreaPrompt && !loading && posts.map((post) => <PostCard key={post.id} post={post} onChanged={loadInitial} />)}
 
-      {hasMore && !loading && <div ref={sentinelRef} className="h-4" />}
-      {loadingMore && <SkeletonPost />}
+      {!showAreaPrompt && hasMore && !loading && <div ref={sentinelRef} className="h-4" />}
+      {!showAreaPrompt && loadingMore && <SkeletonPost />}
     </div>
   );
-}
+      }
