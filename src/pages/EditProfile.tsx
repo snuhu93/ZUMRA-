@@ -8,6 +8,35 @@ import Avatar from '@/components/Avatar';
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
 
+const COUNTRIES = [
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina',
+  'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados',
+  'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana',
+  'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon',
+  'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros',
+  'Congo (Brazzaville)', 'Congo (DR)', 'Costa Rica', "Côte d'Ivoire", 'Croatia', 'Cuba', 'Cyprus',
+  'Czechia', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt',
+  'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji',
+  'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada',
+  'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland',
+  'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
+  'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon',
+  'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi',
+  'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico',
+  'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar',
+  'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria',
+  'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama',
+  'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania',
+  'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines',
+  'Samoa', 'San Marino', 'São Tomé and Príncipe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles',
+  'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa',
+  'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland',
+  'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga',
+  'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine',
+  'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu',
+  'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
+];
+
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
   'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT Abuja', 'Gombe',
@@ -17,14 +46,17 @@ const NIGERIAN_STATES = [
 ];
 
 type AreaFields = {
+  country?: string | null;
   state?: string | null;
   lga?: string | null;
-  ward?: string | null;
   neighborhood?: string | null;
 };
 
 const withCurrent = (options: string[], current: string) =>
   current && !options.includes(current) ? [current, ...options] : options;
+
+const uniqueSorted = (values: string[]) =>
+  Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
 export default function EditProfile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -38,18 +70,38 @@ export default function EditProfile() {
   const [website, setWebsite] = useState(profile?.website ?? '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '');
   const [coverUrl, setCoverUrl] = useState(profile?.cover_url ?? '');
+  const [country, setCountry] = useState(area.country ?? (area.state ? 'Nigeria' : ''));
   const [stateName, setStateName] = useState(area.state ?? '');
   const [lga, setLga] = useState(area.lga ?? '');
-  const [ward, setWard] = useState(area.ward ?? '');
   const [neighborhood, setNeighborhood] = useState(area.neighborhood ?? '');
+  const [stateOptions, setStateOptions] = useState<string[]>([]);
   const [lgaOptions, setLgaOptions] = useState<string[]>([]);
-  const [wardOptions, setWardOptions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load Local Governments when the state changes
+  // States / regions for countries other than Nigeria
   useEffect(() => {
-    if (!stateName) {
+    if (!country || country === 'Nigeria') {
+      setStateOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (supabase as any)
+      .from('ng_areas')
+      .select('state')
+      .eq('country', country)
+      .limit(5000)
+      .then(({ data }: { data: { state: string }[] | null }) => {
+        if (!cancelled) setStateOptions(uniqueSorted((data ?? []).map((r) => r.state)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
+
+  // Cities / Local Governments for the chosen state
+  useEffect(() => {
+    if (!country || !stateName) {
       setLgaOptions([]);
       return;
     }
@@ -57,55 +109,26 @@ export default function EditProfile() {
     (supabase as any)
       .from('ng_areas')
       .select('lga')
+      .eq('country', country)
       .eq('state', stateName)
-      .limit(3000)
+      .limit(5000)
       .then(({ data }: { data: { lga: string }[] | null }) => {
-        if (cancelled) return;
-        const list = Array.from(new Set((data ?? []).map((r) => r.lga))).sort((a, b) =>
-          a.localeCompare(b)
-        );
-        setLgaOptions(list);
+        if (!cancelled) setLgaOptions(uniqueSorted((data ?? []).map((r) => r.lga)));
       });
     return () => {
       cancelled = true;
     };
-  }, [stateName]);
+  }, [country, stateName]);
 
-  // Load wards when the Local Government changes
-  useEffect(() => {
-    if (!stateName || !lga) {
-      setWardOptions([]);
-      return;
-    }
-    let cancelled = false;
-    (supabase as any)
-      .from('ng_areas')
-      .select('ward')
-      .eq('state', stateName)
-      .eq('lga', lga)
-      .not('ward', 'is', null)
-      .limit(500)
-      .then(({ data }: { data: { ward: string }[] | null }) => {
-        if (cancelled) return;
-        const list = Array.from(new Set((data ?? []).map((r) => r.ward))).sort((a, b) =>
-          a.localeCompare(b)
-        );
-        setWardOptions(list);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [stateName, lga]);
+  const handleCountryChange = (value: string) => {
+    setCountry(value);
+    setStateName('');
+    setLga('');
+  };
 
   const handleStateChange = (value: string) => {
     setStateName(value);
     setLga('');
-    setWard('');
-  };
-
-  const handleLgaChange = (value: string) => {
-    setLga(value);
-    setWard('');
   };
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>, kind: 'avatar' | 'cover') => {
@@ -165,9 +188,9 @@ export default function EditProfile() {
         website: website.trim() || null,
         avatar_url: avatarUrl || null,
         cover_url: coverUrl || null,
+        country: country.trim() || null,
         state: stateName.trim() || null,
         lga: lga.trim() || null,
-        ward: ward.trim() || null,
         neighborhood: neighborhood.trim() || null,
         updated_at: new Date().toISOString()
       } as any)
@@ -188,6 +211,8 @@ export default function EditProfile() {
 
   const fieldClass =
     'w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900';
+
+  const stateList = country === 'Nigeria' ? NIGERIAN_STATES : stateOptions;
 
   return (
     <div className="p-4">
@@ -228,56 +253,64 @@ export default function EditProfile() {
       </div>
 
       <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-        <h2 className="text-sm font-semibold">Unguwata (My Area)</h2>
+        <h2 className="text-sm font-semibold">My Area</h2>
         <p className="mb-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Ana amfani da wannan wajen nuna maka labaran unguwarka. / Used to show you news from your area.
+          Ana amfani da wannan wajen nuna maka labaran yankinka. / Used to show you news from your area.
         </p>
         <div className="space-y-3">
-          <select value={stateName} onChange={(e) => handleStateChange(e.target.value)} className={fieldClass}>
-            <option value="">Jiha / State</option>
-            {NIGERIAN_STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+          <select value={country} onChange={(e) => handleCountryChange(e.target.value)} className={fieldClass}>
+            <option value="">Ƙasa / Country</option>
+            {withCurrent(COUNTRIES, country).map((c) => (
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
 
-          {lgaOptions.length > 0 ? (
-            <select value={lga} onChange={(e) => handleLgaChange(e.target.value)} className={fieldClass}>
-              <option value="">Ƙaramar hukuma / Local Government</option>
-              {withCurrent(lgaOptions, lga).map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={lga}
-              onChange={(e) => handleLgaChange(e.target.value)}
-              placeholder="Ƙaramar hukuma / Local Government (misali: Kaduna North)"
-              className={fieldClass}
-            />
-          )}
+          {country && (
+            <>
+              {stateList.length > 0 ? (
+                <select value={stateName} onChange={(e) => handleStateChange(e.target.value)} className={fieldClass}>
+                  <option value="">Jiha / State or Region</option>
+                  {withCurrent(stateList, stateName).map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={stateName}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  placeholder="Jiha / State or Region"
+                  className={fieldClass}
+                />
+              )}
 
-          {wardOptions.length > 0 ? (
-            <select value={ward} onChange={(e) => setWard(e.target.value)} className={fieldClass}>
-              <option value="">Mazaɓa / Ward</option>
-              {withCurrent(wardOptions, ward).map((w) => (
-                <option key={w} value={w}>{w}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={ward}
-              onChange={(e) => setWard(e.target.value)}
-              placeholder="Mazaɓa / Ward"
-              className={fieldClass}
-            />
-          )}
+              {stateName && (
+                <>
+                  {lgaOptions.length > 0 ? (
+                    <select value={lga} onChange={(e) => setLga(e.target.value)} className={fieldClass}>
+                      <option value="">Birni ko Ƙaramar hukuma / City or Local Government</option>
+                      {withCurrent(lgaOptions, lga).map((l) => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={lga}
+                      onChange={(e) => setLga(e.target.value)}
+                      placeholder="Birni ko Ƙaramar hukuma / City or Local Government"
+                      className={fieldClass}
+                    />
+                  )}
 
-          <input
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
-            placeholder="Unguwa / Neighborhood (misali: Unguwan Rimi)"
-            className={fieldClass}
-          />
+                  <input
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    placeholder="Unguwa / Neighborhood"
+                    className={fieldClass}
+                  />
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -286,4 +319,4 @@ export default function EditProfile() {
       </button>
     </div>
   );
-                     }
+  }
