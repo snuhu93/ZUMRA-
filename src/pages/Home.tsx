@@ -41,12 +41,12 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)} kwana`;
 }
 
-// BBC Hausa live pages repeat the same generic sentence; don't show it
+// Shafukan BBC Hausa na kai tsaye suna maimaita jumla ɗaya; kar a nuna ta
 function isBoilerplate(s: string) {
   return /^Wannan shafi ne/i.test(s.trim());
 }
 
-// Labarai tab: reads news_items from Supabase
+// Shafin Labarai: yana karanta news_items daga Supabase
 function NewsFeed({ state, lga }: { state: string; lga: string }) {
   const [scope, setScope] = useState<'nigeria' | 'state' | 'lga'>('nigeria');
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -91,7 +91,7 @@ function NewsFeed({ state, lga }: { state: string; lga: string }) {
       {!!state && (
         <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
           <button onClick={() => setScope('nigeria')} className={chip(scope === 'nigeria')}>
-            Nigeria
+            Najeriya
           </button>
           <button onClick={() => setScope('state')} className={chip(scope === 'state')}>
             {state}
@@ -156,7 +156,7 @@ function NewsFeed({ state, lga }: { state: string; lga: string }) {
   );
 }
 
-// "What's on your mind?" composer bar (Facebook style)
+// Akwatin "Me kake tunani?" (irin na Facebook)
 function CreatePostBar() {
   const t = useT();
   const navigate = useNavigate();
@@ -262,7 +262,7 @@ export default function Home() {
       setCursor(nextCursor);
       setHasMore(!!nextCursor);
     } catch {
-      // Silent -- user can keep scrolling/retry; don't block the feed they already have.
+      // Shiru -- mai amfani zai iya ci gaba da gungurawa/sake gwadawa; kar a toshe shafin da yake da shi.
     } finally {
       setLoadingMore(false);
     }
@@ -272,7 +272,7 @@ export default function Home() {
 
   const openLocalTab = () => {
     if (tab === 'local') return;
-    // Start with the narrowest area the user has filled in
+    // A fara da mafi ƙanƙantar yankin da mai amfani ya cika
     setLevel(neighborhood ? 'neighborhood' : ward ? 'ward' : lga ? 'lga' : 'state');
     setTab('local');
   };
@@ -346,9 +346,9 @@ export default function Home() {
           {showAreaPrompt && (
             <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
               <p>Ba ka saka jiharka da unguwarka ba tukuna.</p>
-              <p className="mt-1 text-xs">Ka je Profile, ka danna Edit Profile, sannan ka cika Unguwata.</p>
+              <p className="mt-1 text-xs">Ka je Shafina, ka danna Gyara Shafi, sannan ka cika Unguwata.</p>
               <button onClick={() => navigate('/profile')} className="mt-3 block w-full font-semibold text-zumra-600">
-                Je Profile
+                Je Shafina
               </button>
             </div>
           )}
