@@ -24,6 +24,7 @@ type NewsItem = {
   image: string | null;
   published_at: string;
   state: string | null;
+  lga: string | null;
 };
 
 function timeAgo(iso: string) {
@@ -41,8 +42,8 @@ function isBoilerplate(s: string) {
 }
 
 // Labarai tab: reads news_items from Supabase
-function NewsFeed({ state }: { state: string }) {
-  const [scope, setScope] = useState<'nigeria' | 'state'>('nigeria');
+function NewsFeed({ state, lga }: { state: string; lga: string }) {
+  const [scope, setScope] = useState<'nigeria' | 'state' | 'lga'>('nigeria');
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -54,10 +55,14 @@ function NewsFeed({ state }: { state: string }) {
       setError(false);
       let q = supabase
         .from('news_items')
-        .select('id,title,summary,link,source_name,image,published_at,state')
+        .select('id,title,summary,link,source_name,image,published_at,state,lga')
         .order('published_at', { ascending: false })
         .limit(30);
       if (scope === 'state' && state) q = q.ilike('state', state.trim());
+      if (scope === 'lga' && lga) {
+        q = q.ilike('lga', lga.trim());
+        if (state) q = q.ilike('state', state.trim());
+      }
       const { data, error: err } = await q;
       if (cancelled) return;
       if (err) setError(true);
@@ -67,7 +72,7 @@ function NewsFeed({ state }: { state: string }) {
     return () => {
       cancelled = true;
     };
-  }, [scope, state]);
+  }, [scope, state, lga]);
 
   const chip = (active: boolean) =>
     `rounded-full px-3 py-1 text-xs font-semibold ${
@@ -86,6 +91,11 @@ function NewsFeed({ state }: { state: string }) {
           <button onClick={() => setScope('state')} className={chip(scope === 'state')}>
             {state}
           </button>
+          {!!lga && (
+            <button onClick={() => setScope('lga')} className={chip(scope === 'lga')}>
+              {lga}
+            </button>
+          )}
         </div>
       )}
 
@@ -287,7 +297,7 @@ export default function Home() {
       </div>
 
       {tab === 'news' ? (
-        <NewsFeed state={state} />
+        <NewsFeed state={state} lga={lga} />
       ) : (
         <>
           {tab === 'local' && !!state && (
@@ -352,4 +362,4 @@ export default function Home() {
       )}
     </div>
   );
-  }
+}
