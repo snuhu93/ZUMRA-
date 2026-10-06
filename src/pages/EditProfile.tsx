@@ -5,9 +5,11 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
 import { uploadImage } from '@/services/storage';
 import Avatar from '@/components/Avatar';
+import { useT } from '@/i18n';
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
 
+// Sunayen ƙasashe ana barin su da Turanci domin suna dacewa da bayanan da ke cikin database
 const COUNTRIES = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina',
   'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados',
@@ -60,6 +62,7 @@ const uniqueSorted = (values: string[]) =>
   Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
 export default function EditProfile() {
+  const t = useT();
   const { user, profile, refreshProfile } = useAuth();
   const { dataSaver } = useSettings();
   const navigate = useNavigate();
@@ -178,7 +181,7 @@ export default function EditProfile() {
       if (kind === 'avatar') setAvatarUrl(publicUrl);
       else setCoverUrl(publicUrl);
     } catch {
-      setError('Image upload failed. Please try again.');
+      setError(t('image_upload_failed'));
     }
   };
 
@@ -189,7 +192,7 @@ export default function EditProfile() {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!USERNAME_REGEX.test(cleanUsername)) {
-      setError('Username can only contain lowercase letters, numbers, and underscores (3-20 characters).');
+      setError(t('username_error'));
       return;
     }
 
@@ -206,7 +209,7 @@ export default function EditProfile() {
 
       if (existing) {
         setSaving(false);
-        setError('This username is already taken. Please choose another.');
+        setError(t('username_taken'));
         return;
       }
     }
@@ -233,9 +236,9 @@ export default function EditProfile() {
     setSaving(false);
     if (updateError) {
       if (updateError.code === '23505') {
-        setError('This username is already taken. Please choose another.');
+        setError(t('username_taken'));
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('something_went_wrong'));
       }
       return;
     }
@@ -250,13 +253,13 @@ export default function EditProfile() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-lg font-bold">Edit Profile</h1>
+      <h1 className="mb-4 text-lg font-bold">{t('edit_profile')}</h1>
       {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600">{error}</p>}
 
       <div className="relative mb-12 h-32 rounded-lg bg-gray-200 dark:bg-gray-800">
         {coverUrl && <img src={coverUrl} alt="" className="h-full w-full rounded-lg object-cover" />}
         <label className="absolute bottom-2 right-2 cursor-pointer rounded-full bg-black/60 px-3 py-1 text-xs text-white">
-          Change Cover
+          {t('editProfile.changeCover')}
           <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'cover')} />
         </label>
         <label className="absolute -bottom-8 left-4 cursor-pointer">
@@ -268,32 +271,32 @@ export default function EditProfile() {
       </div>
 
       <div className="space-y-3">
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className={fieldClass} />
+        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('full_name')} className={fieldClass} />
 
         <div className="flex items-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
           <span className="pl-2.5 text-sm text-gray-400">@</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
-            placeholder="username"
+            placeholder={t('username')}
             maxLength={20}
             className="w-full bg-transparent p-2.5 pl-1 text-sm outline-none"
           />
         </div>
 
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Bio" maxLength={300} rows={3} className={`${fieldClass} resize-none`} />
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location" className={fieldClass} />
-        <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website" className={fieldClass} />
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder={t('editProfile.bio')} maxLength={300} rows={3} className={`${fieldClass} resize-none`} />
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('editProfile.location')} className={fieldClass} />
+        <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder={t('profile.website')} className={fieldClass} />
       </div>
 
       <div className="mt-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-        <h2 className="text-sm font-semibold">My Area</h2>
+        <h2 className="text-sm font-semibold">{t('profile.myArea')}</h2>
         <p className="mb-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Ana amfani da wannan wajen nuna maka labaran yankinka. / Used to show you news from your area.
+          {t('profile.myAreaDesc')}
         </p>
         <div className="space-y-3">
           <select value={country} onChange={(e) => handleCountryChange(e.target.value)} className={fieldClass}>
-            <option value="">Ƙasa / Country</option>
+            <option value="">{t('editProfile.country')}</option>
             {withCurrent(COUNTRIES, country).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -303,7 +306,7 @@ export default function EditProfile() {
             <>
               {stateList.length > 0 ? (
                 <select value={stateName} onChange={(e) => handleStateChange(e.target.value)} className={fieldClass}>
-                  <option value="">Jiha / State or Region</option>
+                  <option value="">{t('editProfile.stateRegion')}</option>
                   {withCurrent(stateList, stateName).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -312,7 +315,7 @@ export default function EditProfile() {
                 <input
                   value={stateName}
                   onChange={(e) => handleStateChange(e.target.value)}
-                  placeholder="Jiha / State or Region"
+                  placeholder={t('editProfile.stateRegion')}
                   className={fieldClass}
                 />
               )}
@@ -321,7 +324,7 @@ export default function EditProfile() {
                 <>
                   {lgaOptions.length > 0 ? (
                     <select value={lga} onChange={(e) => handleLgaChange(e.target.value)} className={fieldClass}>
-                      <option value="">Birni ko Ƙaramar hukuma / City or Local Government</option>
+                      <option value="">{t('editProfile.cityLga')}</option>
                       {withCurrent(lgaOptions, lga).map((l) => (
                         <option key={l} value={l}>{l}</option>
                       ))}
@@ -330,14 +333,14 @@ export default function EditProfile() {
                     <input
                       value={lga}
                       onChange={(e) => handleLgaChange(e.target.value)}
-                      placeholder="Birni ko Ƙaramar hukuma / City or Local Government"
+                      placeholder={t('editProfile.cityLga')}
                       className={fieldClass}
                     />
                   )}
 
                   {lga && wardOptions.length > 0 && (
                     <select value={ward} onChange={(e) => setWard(e.target.value)} className={fieldClass}>
-                      <option value="">Mazaɓa / Ward</option>
+                      <option value="">{t('editProfile.ward')}</option>
                       {withCurrent(wardOptions, ward).map((w) => (
                         <option key={w} value={w}>{w}</option>
                       ))}
@@ -347,7 +350,7 @@ export default function EditProfile() {
                   <input
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
-                    placeholder="Unguwa / Neighborhood"
+                    placeholder={t('profile.neighborhood')}
                     className={fieldClass}
                   />
                 </>
@@ -358,7 +361,7 @@ export default function EditProfile() {
       </div>
 
       <button onClick={handleSave} disabled={saving} className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60">
-        {saving ? 'Saving...' : 'Save Changes'}
+        {saving ? t('saving') : t('profile.saveChanges')}
       </button>
     </div>
   );
