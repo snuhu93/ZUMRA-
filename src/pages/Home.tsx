@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchFeed, fetchLocalFeed, type FeedPost, type LocalLevel } from '@/services/posts';
+import { supabase } from '@/lib/supabaseClient';
 import PostCard from '@/components/PostCard';
 import SkeletonPost from '@/components/SkeletonPost';
 import StatusBar from '@/components/StatusBar';
@@ -12,7 +13,128 @@ import { Image as ImageIcon } from 'lucide-react';
 import { useT } from '@/i18n';
 
 type AreaFields = { state?: string | null; lga?: string | null; neighborhood?: string | null };
-type FeedTab = 'all' | 'local';
+type FeedTab = 'all' | 'local' | 'news';
+
+type NewsItem = {
+  id: string;
+  title: string;
+  summary: string | null;
+  link: string;
+  source_name: string;
+  image: string | null;
+  published_at: string;
+  state: string | null;
+};
+
+function timeAgo(iso: string) {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'yanzu';
+  if (m < 60) return `${m} minti`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} awa`;
+  return `${Math.floor(h / 24)} kwana`;
+}
+
+// Labarai tab: reads news_items from Supabase
+function NewsFeed({ state }: { state: string }) {
+  const [scope, setScope] = useState<'nigeria' | 'state'>('nigeria');
+  const [items, setItems] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(false);
+      let q = supabase
+        .from('news_items')
+        .select('id,title,summary,link,source_name,image,published_at,state')
+        .order('published_at', { ascending: false })
+        .limit(30);
+      if (scope === 'state' && state) q = q.ilike('state', state.trim());
+      const { data, error: err } = await q;
+      if (cancelled) return;
+      if (err) setError(true);
+      else setItems((data ?? []) as NewsItem[]);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [scope, state]);
+
+  const chip = (active: boolean) =>
+    `rounded-full px-3 py-1 text-xs font-semibold ${
+      active
+        ? 'bg-zumra-600 text-white'
+        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+    }`;
+
+  return (
+    <div>
+      {!!state && (
+        <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
+          <button onClick={() => setScope('nigeria')} className={chip(scope === 'nigeria')}>
+            Nigeria
+          </button>
+          <button onClick={() => setScope('state')} className={chip(scope === 'state')}>
+            {state}
+          </button>
+        </div>
+      )}
+
+      {loading && (
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Ana ɗauko labarai...</div>
+      )}
+
+      {!loading && error && (
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          Ba a iya ɗauko labarai ba. Ka sake gwadawa.
+        </div>
+      )}
+
+      {!loading && !error && items.length === 0 && (
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          Babu labarai a wannan yankin tukuna.
+        </div>
+      )}
+
+      {!loading &&
+        !error &&
+        items.map((n) => (
+          <a
+            key={n.id}
+            href={n.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex gap-3 border-b border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
+          >
+            {n.image && (
+              <img
+                src={n.image}
+                alt=""
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+                className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{n.title}</p>
+              {n.summary && (
+                <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400">{n.summary}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {n.source_name} · {timeAgo(n.published_at)}
+              </p>
+            </div>
+          </a>
+        ))}
+    </div>
+  );
+}
 
 // "What's on your mind?" composer bar (Facebook style)
 function CreatePostBar() {
@@ -80,6 +202,10 @@ export default function Home() {
 
   const loadInitial = useCallback(async () => {
     const reqId = ++requestId.current;
+    if (tab === 'news') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(false);
     try {
@@ -93,7 +219,7 @@ export default function Home() {
     } finally {
       if (reqId === requestId.current) setLoading(false);
     }
-  }, [fetchPage]);
+  }, [fetchPage, tab]);
 
   useEffect(() => {
     loadInitial();
@@ -116,7 +242,7 @@ export default function Home() {
     }
   }, [cursor, loadingMore, fetchPage]);
 
-  const sentinelRef = useInfiniteScroll(loadMore, hasMore && !loading);
+  const sentinelRef = useInfiniteScroll(loadMore, hasMore && !loading && tab !== 'news');
 
   const openLocalTab = () => {
     if (tab === 'local') return;
@@ -152,66 +278,73 @@ export default function Home() {
       <div className="flex border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
         <button onClick={() => setTab('all')} className={tabClass(tab === 'all')}>Duka</button>
         <button onClick={openLocalTab} className={tabClass(tab === 'local')}>Unguwata</button>
+        <button onClick={() => setTab('news')} className={tabClass(tab === 'news')}>Labarai</button>
       </div>
 
-      {tab === 'local' && !!state && (
-        <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
-          <button
-            onClick={() => setLevel('neighborhood')}
-            disabled={!neighborhood || !lga}
-            className={chipClass(level === 'neighborhood', !neighborhood || !lga)}
-          >
-            Unguwa
-          </button>
-          <button
-            onClick={() => setLevel('lga')}
-            disabled={!lga}
-            className={chipClass(level === 'lga', !lga)}
-          >
-            Ƙaramar hukuma
-          </button>
-          <button onClick={() => setLevel('state')} className={chipClass(level === 'state', false)}>
-            Jiha
-          </button>
-        </div>
+      {tab === 'news' ? (
+        <NewsFeed state={state} />
+      ) : (
+        <>
+          {tab === 'local' && !!state && (
+            <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
+              <button
+                onClick={() => setLevel('neighborhood')}
+                disabled={!neighborhood || !lga}
+                className={chipClass(level === 'neighborhood', !neighborhood || !lga)}
+              >
+                Unguwa
+              </button>
+              <button
+                onClick={() => setLevel('lga')}
+                disabled={!lga}
+                className={chipClass(level === 'lga', !lga)}
+              >
+                Ƙaramar hukuma
+              </button>
+              <button onClick={() => setLevel('state')} className={chipClass(level === 'state', false)}>
+                Jiha
+              </button>
+            </div>
+          )}
+
+          {showAreaPrompt && (
+            <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              <p>Ba ka saka jiharka da unguwarka ba tukuna.</p>
+              <p className="mt-1 text-xs">Ka je Profile, ka danna Edit Profile, sannan ka cika Unguwata.</p>
+              <button onClick={() => navigate('/profile')} className="mt-3 block w-full font-semibold text-zumra-600">
+                Je Profile
+              </button>
+            </div>
+          )}
+
+          {!showAreaPrompt && loading && (
+            <div>
+              <SkeletonPost />
+              <SkeletonPost />
+              <SkeletonPost />
+            </div>
+          )}
+
+          {!showAreaPrompt && !loading && error && (
+            <div className="p-6 text-center text-sm text-gray-500">
+              {t('feed_error')}
+              <button onClick={loadInitial} className="mt-2 block w-full text-zumra-600 font-semibold">{t('try_again')}</button>
+            </div>
+          )}
+
+          {!showAreaPrompt && !loading && !error && posts.length === 0 && (
+            <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+              {tab === 'local' ? 'Babu posts a wannan yankin tukuna. Ka zama na farko!' : t('no_posts_yet')}
+              <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">{t('create_first_post')}</button>
+            </div>
+          )}
+
+          {!showAreaPrompt && !loading && posts.map((post) => <PostCard key={post.id} post={post} onChanged={loadInitial} />)}
+
+          {!showAreaPrompt && hasMore && !loading && <div ref={sentinelRef} className="h-4" />}
+          {!showAreaPrompt && loadingMore && <SkeletonPost />}
+        </>
       )}
-
-      {showAreaPrompt && (
-        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Ba ka saka jiharka da unguwarka ba tukuna.</p>
-          <p className="mt-1 text-xs">Ka je Profile, ka danna Edit Profile, sannan ka cika Unguwata.</p>
-          <button onClick={() => navigate('/profile')} className="mt-3 block w-full font-semibold text-zumra-600">
-            Je Profile
-          </button>
-        </div>
-      )}
-
-      {!showAreaPrompt && loading && (
-        <div>
-          <SkeletonPost />
-          <SkeletonPost />
-          <SkeletonPost />
-        </div>
-      )}
-
-      {!showAreaPrompt && !loading && error && (
-        <div className="p-6 text-center text-sm text-gray-500">
-          {t('feed_error')}
-          <button onClick={loadInitial} className="mt-2 block w-full text-zumra-600 font-semibold">{t('try_again')}</button>
-        </div>
-      )}
-
-      {!showAreaPrompt && !loading && !error && posts.length === 0 && (
-        <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
-          {tab === 'local' ? 'Babu posts a wannan yankin tukuna. Ka zama na farko!' : t('no_posts_yet')}
-          <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">{t('create_first_post')}</button>
-        </div>
-      )}
-
-      {!showAreaPrompt && !loading && posts.map((post) => <PostCard key={post.id} post={post} onChanged={loadInitial} />)}
-
-      {!showAreaPrompt && hasMore && !loading && <div ref={sentinelRef} className="h-4" />}
-      {!showAreaPrompt && loadingMore && <SkeletonPost />}
     </div>
   );
-      }
+               }
