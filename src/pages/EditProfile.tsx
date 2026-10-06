@@ -49,6 +49,7 @@ type AreaFields = {
   country?: string | null;
   state?: string | null;
   lga?: string | null;
+  ward?: string | null;
   neighborhood?: string | null;
 };
 
@@ -73,9 +74,11 @@ export default function EditProfile() {
   const [country, setCountry] = useState(area.country ?? (area.state ? 'Nigeria' : ''));
   const [stateName, setStateName] = useState(area.state ?? '');
   const [lga, setLga] = useState(area.lga ?? '');
+  const [ward, setWard] = useState(area.ward ?? '');
   const [neighborhood, setNeighborhood] = useState(area.neighborhood ?? '');
   const [stateOptions, setStateOptions] = useState<string[]>([]);
   const [lgaOptions, setLgaOptions] = useState<string[]>([]);
+  const [wardOptions, setWardOptions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,15 +123,45 @@ export default function EditProfile() {
     };
   }, [country, stateName]);
 
+  // Wards (mazaɓa) for the chosen Local Government
+  useEffect(() => {
+    if (!country || !stateName || !lga) {
+      setWardOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (supabase as any)
+      .from('ng_areas')
+      .select('ward')
+      .eq('country', country)
+      .eq('state', stateName)
+      .eq('lga', lga)
+      .not('ward', 'is', null)
+      .limit(5000)
+      .then(({ data }: { data: { ward: string }[] | null }) => {
+        if (!cancelled) setWardOptions(uniqueSorted((data ?? []).map((r) => r.ward)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country, stateName, lga]);
+
   const handleCountryChange = (value: string) => {
     setCountry(value);
     setStateName('');
     setLga('');
+    setWard('');
   };
 
   const handleStateChange = (value: string) => {
     setStateName(value);
     setLga('');
+    setWard('');
+  };
+
+  const handleLgaChange = (value: string) => {
+    setLga(value);
+    setWard('');
   };
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>, kind: 'avatar' | 'cover') => {
@@ -191,6 +224,7 @@ export default function EditProfile() {
         country: country.trim() || null,
         state: stateName.trim() || null,
         lga: lga.trim() || null,
+        ward: ward.trim() || null,
         neighborhood: neighborhood.trim() || null,
         updated_at: new Date().toISOString()
       } as any)
@@ -286,7 +320,7 @@ export default function EditProfile() {
               {stateName && (
                 <>
                   {lgaOptions.length > 0 ? (
-                    <select value={lga} onChange={(e) => setLga(e.target.value)} className={fieldClass}>
+                    <select value={lga} onChange={(e) => handleLgaChange(e.target.value)} className={fieldClass}>
                       <option value="">Birni ko Ƙaramar hukuma / City or Local Government</option>
                       {withCurrent(lgaOptions, lga).map((l) => (
                         <option key={l} value={l}>{l}</option>
@@ -295,10 +329,19 @@ export default function EditProfile() {
                   ) : (
                     <input
                       value={lga}
-                      onChange={(e) => setLga(e.target.value)}
+                      onChange={(e) => handleLgaChange(e.target.value)}
                       placeholder="Birni ko Ƙaramar hukuma / City or Local Government"
                       className={fieldClass}
                     />
+                  )}
+
+                  {lga && wardOptions.length > 0 && (
+                    <select value={ward} onChange={(e) => setWard(e.target.value)} className={fieldClass}>
+                      <option value="">Mazaɓa / Ward</option>
+                      {withCurrent(wardOptions, ward).map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
+                    </select>
                   )}
 
                   <input
