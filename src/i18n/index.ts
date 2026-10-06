@@ -16,6 +16,9 @@ const RTL_LANGS: Lang[] = ['ar'];
 const translations: Record<Lang, Record<string, string>> = {
   en: {
     tagline: 'Connect. Share. Belong.',
+    'home.openProfile': 'Open profile',
+    'home.addPhoto': 'Add photo',
+    'reels.user': 'User',
     'admin.tab.stats': 'Stats',
     'admin.tab.users': 'Users',
     'admin.tab.posts': 'Posts',
@@ -203,6 +206,9 @@ const translations: Record<Lang, Record<string, string>> = {
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
+    'home.openProfile': 'Buɗe shafina',
+    'home.addPhoto': 'Ƙara hoto',
+    'reels.user': 'Mai amfani',
     'admin.tab.stats': 'Ƙididdiga',
     'admin.tab.users': 'Masu amfani',
     'admin.tab.posts': 'Wallafa',
@@ -390,6 +396,9 @@ const translations: Record<Lang, Record<string, string>> = {
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
+    'home.openProfile': 'Ouvrir le profil',
+    'home.addPhoto': 'Ajouter une photo',
+    'reels.user': 'Utilisateur',
     'admin.tab.stats': 'Statistiques',
     'admin.tab.users': 'Utilisateurs',
     'admin.tab.posts': 'Publications',
@@ -572,6 +581,9 @@ const translations: Record<Lang, Record<string, string>> = {
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
+    'home.openProfile': 'فتح الملف الشخصي',
+    'home.addPhoto': 'إضافة صورة',
+    'reels.user': 'مستخدم',
     'admin.tab.stats': 'الإحصائيات',
     'admin.tab.users': 'المستخدمون',
     'admin.tab.posts': 'المنشورات',
@@ -754,6 +766,9 @@ const translations: Record<Lang, Record<string, string>> = {
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
+    'home.openProfile': 'Ṣí àkọọ́lẹ̀ mi',
+    'home.addPhoto': 'Fi fọ́tò kún un',
+    'reels.user': 'Olùlò',
     'admin.tab.stats': 'Ìṣirò',
     'admin.tab.users': 'Àwọn Olùlò',
     'admin.tab.posts': 'Àwọn Ìfìwéránṣẹ́',
@@ -936,6 +951,9 @@ const translations: Record<Lang, Record<string, string>> = {
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
+    'home.openProfile': 'Mepe profaịlụ m',
+    'home.addPhoto': 'Tinye foto',
+    'reels.user': 'Onye ọrụ',
     'admin.tab.stats': 'Ọnụọgụgụ',
     'admin.tab.users': 'Ndị ọrụ',
     'admin.tab.posts': 'Ederede',
@@ -1163,4 +1181,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-    } cd
+      }
