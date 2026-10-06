@@ -480,6 +480,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'settings.cancel': 'Annuler',
     'settings.deleting': 'Suppression...',
     'settings.delete': 'Supprimer',
+    'search.placeholder': 'Rechercher sur Zumra...',
+    'search.searching': 'Recherche en cours...',
+    'search.people': 'Personnes',
+    'search.posts': 'Publications',
+    'search.noResults': 'Aucun résultat pour',
     'profile.onlineServices': 'Services en ligne',
     'profile.website': 'Site web',
     'profile.myArea': 'Ma zone',
@@ -665,6 +670,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'settings.cancel': 'إلغاء',
     'settings.deleting': 'جارٍ الحذف...',
     'settings.delete': 'حذف',
+    'search.placeholder': 'ابحث في Zumra...',
+    'search.searching': 'جارٍ البحث...',
+    'search.people': 'الأشخاص',
+    'search.posts': 'المنشورات',
+    'search.noResults': 'لا توجد نتائج لـ',
     'profile.onlineServices': 'الخدمات عبر الإنترنت',
     'profile.website': 'الموقع الإلكتروني',
     'profile.myArea': 'منطقتي',
@@ -850,6 +860,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'settings.cancel': 'Fagilé',
     'settings.deleting': 'Ń parẹ́...',
     'settings.delete': 'Parẹ́',
+    'search.placeholder': 'Wá lórí Zumra...',
+    'search.searching': 'Ń wá...',
+    'search.people': 'Àwọn Ènìyàn',
+    'search.posts': 'Àwọn Ìfìwéránṣẹ́',
+    'search.noResults': 'Kò sí èsì fún',
     'profile.onlineServices': 'Àwọn Iṣẹ́ Orí Íńtánẹ́ẹ̀tì',
     'profile.website': 'Ojú-òpó Wẹ́ẹ̀bù',
     'profile.myArea': 'Agbègbè Mi',
@@ -1035,6 +1050,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'settings.cancel': 'Kagbuo',
     'settings.deleting': 'Na-ehichapụ...',
     'settings.delete': 'Hichapụ',
+    'search.placeholder': 'Chọọ na Zumra...',
+    'search.searching': 'Na-achọ...',
+    'search.people': 'Ndị mmadụ',
+    'search.posts': 'Ederede',
+    'search.noResults': 'Enweghị nsonaazụ maka',
     'profile.onlineServices': 'Ọrụ Ịntanetị',
     'profile.website': 'Webụsaịtị',
     'profile.myArea': 'Mpaghara m',
@@ -1181,4 +1201,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-      }
+    }
