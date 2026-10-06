@@ -12,7 +12,12 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Image as ImageIcon } from 'lucide-react';
 import { useT } from '@/i18n';
 
-type AreaFields = { state?: string | null; lga?: string | null; neighborhood?: string | null };
+type AreaFields = {
+  state?: string | null;
+  lga?: string | null;
+  ward?: string | null;
+  neighborhood?: string | null;
+};
 type FeedTab = 'all' | 'local' | 'news';
 
 type NewsItem = {
@@ -190,6 +195,7 @@ export default function Home() {
   const area = (profile ?? {}) as AreaFields;
   const state = area.state ?? '';
   const lga = area.lga ?? '';
+  const ward = area.ward ?? '';
   const neighborhood = area.neighborhood ?? '';
 
   const [tab, setTab] = useState<FeedTab>('all');
@@ -208,11 +214,16 @@ export default function Home() {
       return fetchLocalFeed(
         pageCursor,
         user?.id ?? null,
-        { state: state || null, lga: lga || null, neighborhood: neighborhood || null },
+        {
+          state: state || null,
+          lga: lga || null,
+          ward: ward || null,
+          neighborhood: neighborhood || null
+        },
         level
       );
     },
-    [tab, level, state, lga, neighborhood, user?.id]
+    [tab, level, state, lga, ward, neighborhood, user?.id]
   );
 
   const loadInitial = useCallback(async () => {
@@ -262,7 +273,7 @@ export default function Home() {
   const openLocalTab = () => {
     if (tab === 'local') return;
     // Start with the narrowest area the user has filled in
-    setLevel(neighborhood ? 'neighborhood' : lga ? 'lga' : 'state');
+    setLevel(neighborhood ? 'neighborhood' : ward ? 'ward' : lga ? 'lga' : 'state');
     setTab('local');
   };
 
@@ -301,22 +312,32 @@ export default function Home() {
       ) : (
         <>
           {tab === 'local' && !!state && (
-            <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
+            <div className="flex gap-2 overflow-x-auto bg-white px-3 py-2 dark:bg-gray-900">
               <button
                 onClick={() => setLevel('neighborhood')}
                 disabled={!neighborhood || !lga}
-                className={chipClass(level === 'neighborhood', !neighborhood || !lga)}
+                className={`whitespace-nowrap ${chipClass(level === 'neighborhood', !neighborhood || !lga)}`}
               >
                 Unguwa
               </button>
               <button
+                onClick={() => setLevel('ward')}
+                disabled={!ward || !lga}
+                className={`whitespace-nowrap ${chipClass(level === 'ward', !ward || !lga)}`}
+              >
+                Mazaɓa
+              </button>
+              <button
                 onClick={() => setLevel('lga')}
                 disabled={!lga}
-                className={chipClass(level === 'lga', !lga)}
+                className={`whitespace-nowrap ${chipClass(level === 'lga', !lga)}`}
               >
                 Ƙaramar hukuma
               </button>
-              <button onClick={() => setLevel('state')} className={chipClass(level === 'state', false)}>
+              <button
+                onClick={() => setLevel('state')}
+                className={`whitespace-nowrap ${chipClass(level === 'state', false)}`}
+              >
                 Jiha
               </button>
             </div>
@@ -362,4 +383,4 @@ export default function Home() {
       )}
     </div>
   );
-}
+  }
