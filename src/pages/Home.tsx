@@ -35,6 +35,11 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)} kwana`;
 }
 
+// BBC Hausa live pages repeat the same generic sentence; don't show it
+function isBoilerplate(s: string) {
+  return /^Wannan shafi ne/i.test(s.trim());
+}
+
 // Labarai tab: reads news_items from Supabase
 function NewsFeed({ state }: { state: string }) {
   const [scope, setScope] = useState<'nigeria' | 'state'>('nigeria');
@@ -123,7 +128,7 @@ function NewsFeed({ state }: { state: string }) {
             )}
             <div className="min-w-0 flex-1">
               <p className="line-clamp-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{n.title}</p>
-              {n.summary && (
+              {n.summary && !isBoilerplate(n.summary) && (
                 <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400">{n.summary}</p>
               )}
               <p className="mt-1 text-xs text-gray-500">
@@ -347,4 +352,4 @@ export default function Home() {
       )}
     </div>
   );
-               }
+  }
