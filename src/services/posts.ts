@@ -24,11 +24,12 @@ export interface FeedPost {
 export interface LocalArea {
   state: string | null;
   lga: string | null;
+  ward: string | null;
   neighborhood: string | null;
 }
 
-/** How narrow the local feed is: unguwa (neighborhood), ƙaramar hukuma (lga) or jiha (state). */
-export type LocalLevel = 'neighborhood' | 'lga' | 'state';
+/** How narrow the local feed is: unguwa (neighborhood), mazaɓa (ward), ƙaramar hukuma (lga) or jiha (state). */
+export type LocalLevel = 'neighborhood' | 'ward' | 'lga' | 'state';
 
 /** Fetch one page of the home feed, newest first, cursor-based on created_at. */
 export async function fetchFeed(cursor: string | null, userId: string | null): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
@@ -67,7 +68,7 @@ export async function fetchFeed(cursor: string | null, userId: string | null): P
   return { posts, nextCursor };
 }
 
-/** Fetch one page of posts from the user's own area (unguwa / ƙaramar hukuma / jiha), newest first. */
+/** Fetch one page of posts from the user's own area (unguwa / mazaɓa / ƙaramar hukuma / jiha), newest first. */
 export async function fetchLocalFeed(
   cursor: string | null,
   userId: string | null,
@@ -76,11 +77,13 @@ export async function fetchLocalFeed(
 ): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
   const state = area.state?.trim() || null;
   const lga = area.lga?.trim() || null;
+  const ward = area.ward?.trim() || null;
   const neighborhood = area.neighborhood?.trim() || null;
 
   // If the user has not set the part of the area needed for this level, there is nothing to show
   if (!state) return { posts: [], nextCursor: null };
-  if ((level === 'lga' || level === 'neighborhood') && !lga) return { posts: [], nextCursor: null };
+  if ((level === 'lga' || level === 'ward' || level === 'neighborhood') && !lga) return { posts: [], nextCursor: null };
+  if (level === 'ward' && !ward) return { posts: [], nextCursor: null };
   if (level === 'neighborhood' && !neighborhood) return { posts: [], nextCursor: null };
 
   let query = supabase
@@ -93,7 +96,8 @@ export async function fetchLocalFeed(
     .eq('is_deleted', false)
     .ilike('state', state);
 
-  if (level === 'lga' || level === 'neighborhood') query = query.ilike('lga', lga as string);
+  if (level === 'lga' || level === 'ward' || level === 'neighborhood') query = query.ilike('lga', lga as string);
+  if (level === 'ward') query = query.ilike('ward', ward as string);
   if (level === 'neighborhood') query = query.ilike('neighborhood', neighborhood as string);
 
   query = query.order('created_at', { ascending: false }).limit(PAGE_SIZE);
@@ -294,4 +298,4 @@ export async function sharePost(originalPostId: string, userId: string, comment:
     await supabase.from('notifications').insert({ recipient_id: original.author_id, actor_id: userId, type: 'post_share', entity_id: originalPostId });
   }
   return post.id as string;
-           }
+}
