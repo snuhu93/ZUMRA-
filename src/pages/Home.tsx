@@ -10,7 +10,7 @@ import Avatar from '@/components/Avatar';
 import WelcomeModal from '@/components/WelcomeModal';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { Image as ImageIcon } from 'lucide-react';
-import { useT } from '@/i18n';
+import { useT, t as translate } from '@/i18n';
 
 type AreaFields = {
   state?: string | null;
@@ -32,13 +32,14 @@ type NewsItem = {
   lga: string | null;
 };
 
+// Ana kiran wannan a cikin component da ya yi useT(), don haka yana sake zane idan harshe ya canja
 function timeAgo(iso: string) {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (m < 1) return 'yanzu';
-  if (m < 60) return `${m} minti`;
+  if (m < 1) return translate('time_now');
+  if (m < 60) return translate('time.minutes').replace('{n}', String(m));
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} awa`;
-  return `${Math.floor(h / 24)} kwana`;
+  if (h < 24) return translate('time.hours').replace('{n}', String(h));
+  return translate('time.days').replace('{n}', String(Math.floor(h / 24)));
 }
 
 // Shafukan BBC Hausa na kai tsaye suna maimaita jumla ɗaya; kar a nuna ta
@@ -48,6 +49,7 @@ function isBoilerplate(s: string) {
 
 // Shafin Labarai: yana karanta news_items daga Supabase
 function NewsFeed({ state, lga }: { state: string; lga: string }) {
+  const t = useT();
   const [scope, setScope] = useState<'nigeria' | 'state' | 'lga'>('nigeria');
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ function NewsFeed({ state, lga }: { state: string; lga: string }) {
       {!!state && (
         <div className="flex gap-2 bg-white px-3 py-2 dark:bg-gray-900">
           <button onClick={() => setScope('nigeria')} className={chip(scope === 'nigeria')}>
-            Najeriya
+            {t('news.nigeria')}
           </button>
           <button onClick={() => setScope('state')} className={chip(scope === 'state')}>
             {state}
@@ -105,18 +107,18 @@ function NewsFeed({ state, lga }: { state: string; lga: string }) {
       )}
 
       {loading && (
-        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Ana ɗauko labarai...</div>
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">{t('news.loading')}</div>
       )}
 
       {!loading && error && (
         <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          Ba a iya ɗauko labarai ba. Ka sake gwadawa.
+          {t('news.error')}
         </div>
       )}
 
       {!loading && !error && items.length === 0 && (
         <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          Babu labarai a wannan yankin tukuna.
+          {t('news.empty')}
         </div>
       )}
 
@@ -302,9 +304,9 @@ export default function Home() {
       <CreatePostBar />
 
       <div className="flex border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <button onClick={() => setTab('all')} className={tabClass(tab === 'all')}>Duka</button>
-        <button onClick={openLocalTab} className={tabClass(tab === 'local')}>Unguwata</button>
-        <button onClick={() => setTab('news')} className={tabClass(tab === 'news')}>Labarai</button>
+        <button onClick={() => setTab('all')} className={tabClass(tab === 'all')}>{t('feed.tab.all')}</button>
+        <button onClick={openLocalTab} className={tabClass(tab === 'local')}>{t('feed.tab.neighborhood')}</button>
+        <button onClick={() => setTab('news')} className={tabClass(tab === 'news')}>{t('feed.tab.news')}</button>
       </div>
 
       {tab === 'news' ? (
@@ -318,37 +320,37 @@ export default function Home() {
                 disabled={!neighborhood || !lga}
                 className={`whitespace-nowrap ${chipClass(level === 'neighborhood', !neighborhood || !lga)}`}
               >
-                Unguwa
+                {t('level.neighborhood')}
               </button>
               <button
                 onClick={() => setLevel('ward')}
                 disabled={!ward || !lga}
                 className={`whitespace-nowrap ${chipClass(level === 'ward', !ward || !lga)}`}
               >
-                Mazaɓa
+                {t('level.ward')}
               </button>
               <button
                 onClick={() => setLevel('lga')}
                 disabled={!lga}
                 className={`whitespace-nowrap ${chipClass(level === 'lga', !lga)}`}
               >
-                Ƙaramar hukuma
+                {t('level.lga')}
               </button>
               <button
                 onClick={() => setLevel('state')}
                 className={`whitespace-nowrap ${chipClass(level === 'state', false)}`}
               >
-                Jiha
+                {t('level.state')}
               </button>
             </div>
           )}
 
           {showAreaPrompt && (
             <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              <p>Ba ka saka jiharka da unguwarka ba tukuna.</p>
-              <p className="mt-1 text-xs">Ka je Shafina, ka danna Gyara Shafi, sannan ka cika Unguwata.</p>
+              <p>{t('area.notSet')}</p>
+              <p className="mt-1 text-xs">{t('area.notSetHint')}</p>
               <button onClick={() => navigate('/profile')} className="mt-3 block w-full font-semibold text-zumra-600">
-                Je Shafina
+                {t('area.goProfile')}
               </button>
             </div>
           )}
@@ -370,7 +372,7 @@ export default function Home() {
 
           {!showAreaPrompt && !loading && !error && posts.length === 0 && (
             <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
-              {tab === 'local' ? 'Babu posts a wannan yankin tukuna. Ka zama na farko!' : t('no_posts_yet')}
+              {tab === 'local' ? t('feed.emptyLocal') : t('no_posts_yet')}
               <button onClick={() => navigate('/create')} className="mt-2 block w-full font-semibold text-zumra-600">{t('create_first_post')}</button>
             </div>
           )}
