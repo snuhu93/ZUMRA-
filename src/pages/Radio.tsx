@@ -38,10 +38,24 @@ const smallBtn = (bg: string): React.CSSProperties => ({
   fontSize: 13,
 });
 
+// Turns any error into readable text (also reads the body of edge function errors)
+async function explain(e: any): Promise<string> {
+  try {
+    if (e?.context && typeof e.context.text === "function") {
+      const txt = await e.context.text();
+      return `${e.message || "Error"}: ${txt}`;
+    }
+  } catch {
+    // ignore
+  }
+  return e?.message || String(e);
+}
+
 function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
   const t = useT();
   const { user, profile } = useAuth();
   const [status, setStatus] = useState<"connecting" | "live" | "error">("connecting");
+  const [errMsg, setErrMsg] = useState("");
   const [isHost, setIsHost] = useState(false);
   const [count, setCount] = useState(0);
   const [micFailed, setMicFailed] = useState(false);
@@ -131,7 +145,13 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
         const { data, error } = await supabase.functions.invoke("livekit-token", {
           body: { roomId: room.id },
         });
-        if (error || !data?.token) throw new Error("token");
+        if (error) throw error;
+        if (!data?.token) {
+          throw new Error("No token returned: " + JSON.stringify(data));
+        }
+        if (!data?.url) {
+          throw new Error("No LiveKit url returned (check LIVEKIT_URL secret)");
+        }
         if (cancelled) return;
 
         setIsHost(data.isHost);
@@ -175,7 +195,13 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
         });
 
         await lk.connect(data.url, data.token);
-        await lk.startAudio();
+
+        // Not fatal: some phones block this until the user taps the screen
+        try {
+          await lk.startAudio();
+        } catch (e) {
+          console.error("startAudio failed", e);
+        }
 
         if (data.isHost) {
           try {
@@ -197,8 +223,13 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
 
         refresh();
         setStatus("live");
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (e) {
+        console.error("Radio room error", e);
+        const msg = await explain(e);
+        if (!cancelled) {
+          setErrMsg(msg);
+          setStatus("error");
+        }
       }
     })();
 
@@ -291,7 +322,20 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
       ) : status === "connecting" ? (
         <p>{t("radio.connecting")}</p>
       ) : status === "error" ? (
-        <p>{t("radio.error")}</p>
+        <>
+          <p>{t("radio.error")}</p>
+          {errMsg && (
+            <p
+              style={{
+                color: "#dc2626",
+                fontSize: 13,
+                wordBreak: "break-word",
+              }}
+            >
+              {errMsg}
+            </p>
+          )}
+        </>
       ) : (
         <>
           <p style={{ color: "#16a34a", fontWeight: 600 }}>
@@ -548,4 +592,4 @@ export default function Radio() {
       )}
     </div>
   );
-  }
+}
