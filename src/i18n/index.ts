@@ -217,7 +217,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': 'You are the host',
     'radio.micError': 'Could not access the microphone',
     'radio.ended': 'This room has ended',
-    'radio.error': 'Something went wrong. Please try again.'
+    'radio.error': 'Something went wrong. Please try again.',
+    'radio.mute': 'Mute',
+    'radio.unmute': 'Unmute',
+    'radio.requests': 'Requests to speak',
+    'radio.noRequests': 'No requests yet',
+    'radio.raiseHand': 'Raise hand',
+    'radio.lowerHand': 'Lower hand',
+    'radio.handWaiting': 'Waiting for the host to approve',
+    'radio.youAreSpeaker': 'You are a speaker',
+    'radio.stepDown': 'Step down',
+    'radio.approve': 'Approve',
+    'radio.decline': 'Decline',
+    'radio.onStage': 'On stage',
+    'radio.removeSpeaker': 'Remove'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -422,7 +435,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': 'Kai ne mai gabatarwa',
     'radio.micError': 'Ba a iya amfani da makirufo ba',
     'radio.ended': 'An rufe wannan ɗakin',
-    'radio.error': 'Wani abu ya faru. Sake gwadawa.'
+    'radio.error': 'Wani abu ya faru. Sake gwadawa.',
+    'radio.mute': 'Kashe makirufo',
+    'radio.unmute': 'Kunna makirufo',
+    'radio.requests': 'Buƙatun yin magana',
+    'radio.noRequests': 'Babu buƙata tukuna',
+    'radio.raiseHand': 'Ɗaga hannu',
+    'radio.lowerHand': 'Sauke hannu',
+    'radio.handWaiting': 'Ana jiran mai gabatarwa ya amince',
+    'radio.youAreSpeaker': 'Kai mai magana ne',
+    'radio.stepDown': 'Sauka',
+    'radio.approve': 'Amince',
+    'radio.decline': 'Ƙi',
+    'radio.onStage': 'A kan dandamali',
+    'radio.removeSpeaker': 'Cire'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -627,7 +653,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': "Vous êtes l'hôte",
     'radio.micError': "Impossible d'accéder au microphone",
     'radio.ended': 'Ce salon est terminé',
-    'radio.error': "Une erreur s'est produite. Veuillez réessayer."
+    'radio.error': "Une erreur s'est produite. Veuillez réessayer.",
+    'radio.mute': 'Couper le micro',
+    'radio.unmute': 'Activer le micro',
+    'radio.requests': 'Demandes de parole',
+    'radio.noRequests': 'Aucune demande pour le moment',
+    'radio.raiseHand': 'Lever la main',
+    'radio.lowerHand': 'Baisser la main',
+    'radio.handWaiting': "En attente de l'approbation de l'hôte",
+    'radio.youAreSpeaker': 'Vous êtes intervenant',
+    'radio.stepDown': 'Quitter la scène',
+    'radio.approve': 'Approuver',
+    'radio.decline': 'Refuser',
+    'radio.onStage': 'Sur scène',
+    'radio.removeSpeaker': 'Retirer'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -832,7 +871,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': 'أنت المضيف',
     'radio.micError': 'تعذر الوصول إلى الميكروفون',
     'radio.ended': 'انتهت هذه الغرفة',
-    'radio.error': 'حدث خطأ. يرجى المحاولة مرة أخرى.'
+    'radio.error': 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+    'radio.mute': 'كتم الصوت',
+    'radio.unmute': 'إلغاء الكتم',
+    'radio.requests': 'طلبات التحدث',
+    'radio.noRequests': 'لا توجد طلبات بعد',
+    'radio.raiseHand': 'رفع اليد',
+    'radio.lowerHand': 'خفض اليد',
+    'radio.handWaiting': 'في انتظار موافقة المضيف',
+    'radio.youAreSpeaker': 'أنت متحدث',
+    'radio.stepDown': 'النزول من المنصة',
+    'radio.approve': 'موافقة',
+    'radio.decline': 'رفض',
+    'radio.onStage': 'على المنصة',
+    'radio.removeSpeaker': 'إزالة'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -1037,7 +1089,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': 'Ìwọ ni olùgbàlejò',
     'radio.micError': 'Kò lè lo gbohungbohun',
     'radio.ended': 'Yàrá yìí ti parí',
-    'radio.error': 'Nǹkan kan ṣẹlẹ̀. Jọ̀wọ́ gbìyànjú lẹ́ẹ̀kan sí i.'
+    'radio.error': 'Nǹkan kan ṣẹlẹ̀. Jọ̀wọ́ gbìyànjú lẹ́ẹ̀kan sí i.',
+    'radio.mute': 'Pa ohùn mọ́',
+    'radio.unmute': 'Ṣí ohùn',
+    'radio.requests': 'Àwọn ìbéèrè láti sọ̀rọ̀',
+    'radio.noRequests': 'Kò tíì sí ìbéèrè',
+    'radio.raiseHand': 'Gbé ọwọ́ sókè',
+    'radio.lowerHand': 'Sọ ọwọ́ kalẹ̀',
+    'radio.handWaiting': 'Ń dúró de olùgbàlejò láti fọwọ́ sí i',
+    'radio.youAreSpeaker': 'Olùsọ̀rọ̀ ni ọ́',
+    'radio.stepDown': 'Sọ̀kalẹ̀',
+    'radio.approve': 'Fọwọ́ sí i',
+    'radio.decline': 'Kọ̀',
+    'radio.onStage': 'Lórí pèpéle',
+    'radio.removeSpeaker': 'Yọ kúrò'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -1242,7 +1307,20 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.youAreHost': 'Ị bụ onye na-eduzi',
     'radio.micError': 'Enweghị ike iji maịkrofon',
     'radio.ended': 'E mechiela ụlọ a',
-    'radio.error': 'Ihe mere. Biko nwaa ọzọ.'
+    'radio.error': 'Ihe mere. Biko nwaa ọzọ.',
+    'radio.mute': 'Gbanyụọ olu',
+    'radio.unmute': 'Meghee olu',
+    'radio.requests': 'Arịrịọ ikwu okwu',
+    'radio.noRequests': 'Enweghị arịrịọ ka',
+    'radio.raiseHand': 'Welie aka',
+    'radio.lowerHand': 'Budata aka',
+    'radio.handWaiting': 'Na-eche ka onye na-eduzi nabata',
+    'radio.youAreSpeaker': 'Ị bụ onye na-ekwu okwu',
+    'radio.stepDown': 'Rida',
+    'radio.approve': 'Nabata',
+    'radio.decline': 'Jụ',
+    'radio.onStage': 'N’elu ogbo',
+    'radio.removeSpeaker': 'Wepụ'
   }
 };
 
@@ -1291,4 +1369,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-    }
+      }
