@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { useT } from "../i18n";
-import { supabase } from "../lib/supabase";
+import { supabase } from '@/lib/supabaseClient';
 
 type RoomRow = {
   id: string;
@@ -43,10 +43,12 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           table: "radio_rooms",
           filter: `id=eq.${room.id}`,
         },
-        (payload) => {
-          if (!(payload.new as { is_live: boolean }).is_live) {
+                (payload: { new: { is_live?: boolean } }) => {
+          if (payload.new.is_live === false) {
             setEnded(true);
             lk.disconnect();
+          }
+                }
           }
         }
       )
