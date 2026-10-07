@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../context/AuthContext";
+import { Room, RoomEvent, Track } from "livekit-client";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
 
 type Rec = {
   id: string;
@@ -18,51 +19,126 @@ function pickMime() {
   return types.find((t) => MediaRecorder.isTypeSupported(t)) || "";
 }
 
-export default function RadioRecorder() {
-  const { user } = useAuth() as any;
+const recBtn = (bg: string): React.CSSProperties => ({
+  background: bg,
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  padding: "10px 14px",
+  cursor: "pointer",
+});
+
+// Jerin rikodi (kowa yana iya sauraro)
+export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
+  const [list, setList] = useState<Rec[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("radio_recordings")
+      .select("id, title, file_url, duration, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setList((data as Rec[]) || []));
+  }, [reloadKey]);
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3>🎧 Recordings</h3>
+      {list.length === 0 && <p>No recordings yet.</p>}
+      {list.map((r) => (
+        <div key={r.id} style={{ marginBottom: 14 }}>
+          <div>
+            {r.title} · {fmt(r.duration)}
+          </div>
+          <audio controls src={r.file_url} style={{ width: "100%" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Maɓallin rikodi (host kaɗai)
+export default function RadioRecorder({ lk }: { lk: Room | null }) {
+  const { user } = useAuth();
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [list, setList] = useState<Rec[]>([]);
   const [msg, setMsg] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<any>(null);
   const secondsRef = useRef(0);
-
-  const load = async () => {
-    const { data } = await supabase
-      .from("radio_recordings")
-      .select("id,title,file_url,duration,created_at")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    setList((data as Rec[]) || []);
-  };
+  const ctxRef = useRef<AudioContext | null>(null);
+  const cleanupRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    load();
     return () => {
       clearInterval(timerRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      cleanupRef.current();
     };
   }, []);
 
   const start = async () => {
     setMsg("");
+    if (!lk) {
+      setMsg("Room is not ready yet.");
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
+      const ctx = new AudioContext();
+      await ctx.resume();
+      ctxRef.current = ctx;
+      const dest = ctx.createMediaStreamDestination();
+      const connected = new Set<string>();
+
+      const addTrack = (mt?: MediaStreamTrack | null) => {
+        if (!mt || connected.has(mt.id)) return;
+        connected.add(mt.id);
+        ctx.createMediaStreamSource(new MediaStream([mt])).connect(dest);
+      };
+
+      // Muryar host
+      const localPub = lk.localParticipant.getTrackPublication(
+        Track.Source.Microphone
+      );
+      addTrack(localPub?.track?.mediaStreamTrack);
+
+      // Muryar masu magana da suka riga suke cikin ɗakin
+      lk.remoteParticipants.forEach((p) => {
+        p.audioTrackPublications.forEach((pub) => {
+          addTrack(pub.track?.mediaStreamTrack);
+        });
+      });
+
+      // Masu magana da suka shigo bayan an fara rikodi
+      const onSub = (track: any) => {
+        if (track.kind === Track.Kind.Audio) addTrack(track.mediaStreamTrack);
+      };
+      lk.on(RoomEvent.TrackSubscribed, onSub);
+
+      cleanupRef.current = () => {
+        lk.off(RoomEvent.TrackSubscribed, onSub);
+        ctx.close().catch(() => {});
+      };
+
       const mime = pickMime();
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const rec = new MediaRecorder(
+        dest.stream,
+        mime ? { mimeType: mime } : undefined
+      );
       chunksRef.current = [];
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      rec.onstop = () => save(rec.mimeType || mime || "audio/webm");
+      rec.onstop = () => {
+        cleanupRef.current();
+        save(rec.mimeType || mime || "audio/webm");
+      };
       rec.start(1000);
       recorderRef.current = rec;
+
       secondsRef.current = 0;
       setSeconds(0);
       setRecording(true);
@@ -70,19 +146,20 @@ export default function RadioRecorder() {
         secondsRef.current += 1;
         setSeconds(secondsRef.current);
       }, 1000);
-    } catch {
-      setMsg("Ba a sami izinin makirufo ba.");
+    } catch (e) {
+      console.error(e);
+      setMsg("Could not start recording.");
     }
   };
 
   const stop = () => {
     clearInterval(timerRef.current);
     recorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach((t) => t.stop());
     setRecording(false);
   };
 
   const save = async (mime: string) => {
+    if (!user) return;
     setSaving(true);
     try {
       const blob = new Blob(chunksRef.current, { type: mime });
@@ -100,65 +177,37 @@ export default function RadioRecorder() {
 
       const { error: dbErr } = await supabase.from("radio_recordings").insert({
         host_id: user.id,
-        title: "Rikodin Radio " + new Date().toLocaleDateString(),
+        title: "Radio " + new Date().toLocaleString(),
         file_url: pub.publicUrl,
         duration: secondsRef.current,
       });
       if (dbErr) throw dbErr;
 
-      setMsg("An ajiye rikodin ✅");
-      load();
+      setMsg("Saved ✅");
+      setReloadKey((k) => k + 1);
     } catch (e) {
-      setMsg("Ba a iya ajiyewa ba. Sake gwadawa.");
+      console.error(e);
+      setMsg("Could not save the recording.");
     }
     setSaving(false);
   };
 
   return (
-    <div style={{ marginTop: 20 }}>
+    <div style={{ marginTop: 16 }}>
       {!recording ? (
         <button
           onClick={start}
           disabled={saving}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 8,
-            background: "#dc2626",
-            color: "#fff",
-            border: "none",
-            fontSize: 16,
-          }}
+          style={recBtn("#dc2626")}
         >
-          {saving ? "Ana ajiyewa..." : "🔴 Fara Rikodi"}
+          {saving ? "Saving..." : "🔴 Record"}
         </button>
       ) : (
-        <button
-          onClick={stop}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 8,
-            background: "#374151",
-            color: "#fff",
-            border: "none",
-            fontSize: 16,
-          }}
-        >
-          ⏹ Tsayar · {fmt(seconds)}
+        <button onClick={stop} style={recBtn("#374151")}>
+          ⏹ Stop · {fmt(seconds)}
         </button>
       )}
-
       {msg && <p>{msg}</p>}
-
-      <h3 style={{ marginTop: 24 }}>Rikodin da aka yi</h3>
-      {list.length === 0 && <p>Babu rikodi tukuna.</p>}
-      {list.map((r) => (
-        <div key={r.id} style={{ marginBottom: 14 }}>
-          <div>
-            {r.title} · {fmt(r.duration)}
-          </div>
-          <audio controls src={r.file_url} style={{ width: "100%" }} />
-        </div>
-      ))}
     </div>
   );
-                 }
+}
