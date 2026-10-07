@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
-import { useT } from "../i18n";
-import { supabase } from '@/lib/supabaseClient';
+import { useT } from "@/i18n";
+import { supabase } from "@/lib/supabaseClient";
 
 type RoomRow = {
   id: string;
@@ -43,12 +43,11 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           table: "radio_rooms",
           filter: `id=eq.${room.id}`,
         },
-                (payload: { new: { is_live?: boolean } }) => {
-          if (payload.new.is_live === false) {
+        (payload) => {
+          const row = payload.new as { is_live?: boolean };
+          if (row.is_live === false) {
             setEnded(true);
             lk.disconnect();
-          }
-                }
           }
         }
       )
@@ -172,7 +171,9 @@ export default function Radio() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "radio_rooms" },
-        loadRooms
+        () => {
+          loadRooms();
+        }
       )
       .subscribe();
     return () => {
@@ -263,4 +264,4 @@ export default function Radio() {
       )}
     </div>
   );
-  }
+    }
