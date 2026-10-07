@@ -3,6 +3,7 @@ import { Room, RoomEvent, Track } from "livekit-client";
 import { useT } from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
+import RadioRecorder, { RecordingsList } from "@/components/RadioRecorder";
 
 type RoomRow = {
   id: string;
@@ -384,6 +385,9 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
               {t("radio.stepDown")}
             </button>
           )}
+
+          {/* Rikodin murya (host kaɗai) */}
+          {isHost && <RadioRecorder lk={lkRef.current} />}
         </div>
       )}
 
@@ -590,6 +594,8 @@ export default function Radio() {
           </div>
         ))
       )}
+
+      <RecordingsList />
     </div>
   );
-}
+  }
