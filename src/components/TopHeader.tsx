@@ -72,6 +72,13 @@ export default function TopHeader() {
 
       <div className="flex shrink-0 items-center gap-2">
         <Link
+          to="/radio"
+          aria-label={t('radio.title')}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-lg dark:bg-gray-800"
+        >
+          📻
+        </Link>
+        <Link
           to="/notifications"
           aria-label={t('settings.notifications')}
           onClick={() => setUnreadNotifs(0)}
@@ -159,4 +166,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-      }
+}
