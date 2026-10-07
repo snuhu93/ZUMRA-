@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { useT } from "@/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 
 type RoomRow = {
@@ -8,6 +9,14 @@ type RoomRow = {
   title: string;
   host_id: string;
   created_at: string;
+};
+
+type HandRow = {
+  id: string;
+  room_id: string;
+  user_id: string;
+  username: string;
+  status: "raised" | "speaking";
 };
 
 // A room is hidden from the list if its host has not sent a heartbeat for this long
@@ -23,20 +32,66 @@ const btn = (bg: string): React.CSSProperties => ({
   cursor: "pointer",
 });
 
+const smallBtn = (bg: string): React.CSSProperties => ({
+  ...btn(bg),
+  padding: "6px 10px",
+  fontSize: 13,
+});
+
 function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
   const t = useT();
+  const { user, profile } = useAuth();
   const [status, setStatus] = useState<"connecting" | "live" | "error">("connecting");
   const [isHost, setIsHost] = useState(false);
   const [count, setCount] = useState(0);
   const [micFailed, setMicFailed] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [isSpeaker, setIsSpeaker] = useState(false);
+  const [hands, setHands] = useState<HandRow[]>([]);
   const [ended, setEnded] = useState(false);
   const audioBox = useRef<HTMLDivElement>(null);
   const hostRef = useRef(false);
+  const lkRef = useRef<Room | null>(null);
+  const userIdRef = useRef<string | undefined>(user?.id);
+  userIdRef.current = user?.id;
+
+  const loadHands = async () => {
+    const { data } = await supabase
+      .from("radio_hands")
+      .select("id, room_id, user_id, username, status")
+      .eq("room_id", room.id)
+      .order("created_at", { ascending: true });
+    setHands((data as HandRow[]) || []);
+  };
+
+  // Keep the list of raised hands and speakers up to date
+  useEffect(() => {
+    loadHands();
+    const channel = supabase
+      .channel(`radio-hands-${room.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "radio_hands",
+          filter: `room_id=eq.${room.id}`,
+        },
+        () => {
+          loadHands();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [room.id]);
 
   useEffect(() => {
     let cancelled = false;
     let heartbeat: ReturnType<typeof setInterval> | undefined;
     const lk = new Room();
+    lkRef.current = lk;
 
     // Marks the room as ended in the database (only does something for the host)
     const closeIfHost = () => {
@@ -105,12 +160,27 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           }
         });
 
+        // When the host approves or removes this person as a speaker
+        lk.on(RoomEvent.ParticipantPermissionsChanged, async () => {
+          if (hostRef.current) return;
+          const can = !!lk.localParticipant.permissions?.canPublish;
+          setIsSpeaker(can);
+          try {
+            await lk.localParticipant.setMicrophoneEnabled(can);
+            setMicOn(can);
+          } catch {
+            setMicFailed(true);
+            setMicOn(false);
+          }
+        });
+
         await lk.connect(data.url, data.token);
         await lk.startAudio();
 
         if (data.isHost) {
           try {
             await lk.localParticipant.setMicrophoneEnabled(true);
+            setMicOn(true);
           } catch {
             setMicFailed(true);
           }
@@ -137,6 +207,17 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
       if (heartbeat) clearInterval(heartbeat);
       window.removeEventListener("pagehide", closeIfHost);
       closeIfHost();
+
+      // Remove this person's hand or speaker spot when they leave
+      if (!hostRef.current && userIdRef.current) {
+        supabase
+          .from("radio_hands")
+          .delete()
+          .eq("room_id", room.id)
+          .eq("user_id", userIdRef.current)
+          .then(() => {});
+      }
+
       lk.disconnect();
       supabase.removeChannel(channel);
     };
@@ -150,6 +231,56 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
     hostRef.current = false;
     onLeave();
   };
+
+  const toggleMic = async () => {
+    const lk = lkRef.current;
+    if (!lk) return;
+    const next = !micOn;
+    try {
+      await lk.localParticipant.setMicrophoneEnabled(next);
+      setMicOn(next);
+    } catch {
+      setMicFailed(true);
+    }
+  };
+
+  const raiseHand = async () => {
+    if (!user) return;
+    await supabase.from("radio_hands").insert({
+      room_id: room.id,
+      user_id: user.id,
+      username: profile?.username || "",
+      status: "raised",
+    });
+    loadHands();
+  };
+
+  const lowerHand = async () => {
+    if (!user) return;
+    await supabase
+      .from("radio_hands")
+      .delete()
+      .eq("room_id", room.id)
+      .eq("user_id", user.id);
+    loadHands();
+  };
+
+  // Host: allow or remove a speaker. A speaker can also step down themselves (allow = false).
+  const setSpeaker = async (userId: string, allow: boolean) => {
+    await supabase.functions.invoke("livekit-speaker", {
+      body: { roomId: room.id, userId, allow },
+    });
+    loadHands();
+  };
+
+  const declineHand = async (handId: string) => {
+    await supabase.from("radio_hands").delete().eq("id", handId);
+    loadHands();
+  };
+
+  const requests = hands.filter((h) => h.status === "raised");
+  const speakers = hands.filter((h) => h.status === "speaking");
+  const myHand = hands.find((h) => h.user_id === user?.id);
 
   return (
     <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
@@ -167,13 +298,118 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
             🔴 {t("radio.liveNow")} · {count} {t("radio.listeners")}
           </p>
           {isHost && <p>🎙️ {t("radio.youAreHost")}</p>}
+          {!isHost && isSpeaker && <p>🎙️ {t("radio.youAreSpeaker")}</p>}
           {micFailed && <p style={{ color: "#dc2626" }}>{t("radio.micError")}</p>}
         </>
       )}
 
       <div ref={audioBox} />
 
-      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+      {!ended && status === "live" && (
+        <div style={{ marginTop: 12 }}>
+          {/* Host and speakers can mute or unmute */}
+          {(isHost || isSpeaker) && (
+            <button onClick={toggleMic} style={btn(micOn ? "#6b7280" : "#16a34a")}>
+              {micOn ? t("radio.mute") : t("radio.unmute")}
+            </button>
+          )}
+
+          {/* Listener controls */}
+          {!isHost && !isSpeaker && (
+            <>
+              {myHand ? (
+                <div>
+                  <p>✋ {t("radio.handWaiting")}</p>
+                  <button onClick={lowerHand} style={btn("#6b7280")}>
+                    {t("radio.lowerHand")}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={raiseHand} style={btn("#2563eb")}>
+                  ✋ {t("radio.raiseHand")}
+                </button>
+              )}
+            </>
+          )}
+
+          {!isHost && isSpeaker && (
+            <button
+              onClick={() => user && setSpeaker(user.id, false)}
+              style={{ ...btn("#6b7280"), marginLeft: 8 }}
+            >
+              {t("radio.stepDown")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Host panel: requests and speakers on stage */}
+      {isHost && !ended && status === "live" && (
+        <div style={{ marginTop: 20 }}>
+          <h3>✋ {t("radio.requests")}</h3>
+          {requests.length === 0 ? (
+            <p>{t("radio.noRequests")}</p>
+          ) : (
+            requests.map((h) => (
+              <div
+                key={h.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: 10,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <span>@{h.username || "user"}</span>
+                <span style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => setSpeaker(h.user_id, true)}
+                    style={smallBtn("#16a34a")}
+                  >
+                    {t("radio.approve")}
+                  </button>
+                  <button onClick={() => declineHand(h.id)} style={smallBtn("#6b7280")}>
+                    {t("radio.decline")}
+                  </button>
+                </span>
+              </div>
+            ))
+          )}
+
+          {speakers.length > 0 && (
+            <>
+              <h3 style={{ marginTop: 16 }}>🎙️ {t("radio.onStage")}</h3>
+              {speakers.map((h) => (
+                <div
+                  key={h.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: 10,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 10,
+                    marginBottom: 8,
+                  }}
+                >
+                  <span>@{h.username || "user"}</span>
+                  <button
+                    onClick={() => setSpeaker(h.user_id, false)}
+                    style={smallBtn("#dc2626")}
+                  >
+                    {t("radio.removeSpeaker")}
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
         {isHost && !ended ? (
           <button onClick={endRoom} style={btn("#dc2626")}>
             {t("radio.endRoom")}
@@ -312,4 +548,4 @@ export default function Radio() {
       )}
     </div>
   );
-        }
+  }
