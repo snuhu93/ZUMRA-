@@ -35,6 +35,7 @@ const About = lazy(() => import('@/pages/About'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const ComplaintPage = lazy(() => import('@/pages/ComplaintPage'));
 const AdminComplaints = lazy(() => import('@/pages/AdminComplaints'));
+const Radio = lazy(() => import('@/pages/Radio'));
 
 function PageFallback() {
   return (
@@ -96,6 +97,8 @@ export default function App() {
 
                 <Route path="/status/create" element={<Protected><CreateStatus /></Protected>} />
                 <Route path="/status/:authorId" element={<Protected><ViewStatus /></Protected>} />
+
+                <Route path="/radio" element={<Protected><Radio /></Protected>} />
 
                 <Route path="/settings" element={<Protected><Settings /></Protected>} />
                 <Route path="/settings/blocked" element={<Protected><BlockedUsers /></Protected>} />
