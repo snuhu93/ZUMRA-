@@ -15,6 +15,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
     "browser-image-compression": "^2.0.2",
+    "livekit-client": "^2.5.0",
     "lucide-react": "^0.454.0"
   },
   "devDependencies": {
