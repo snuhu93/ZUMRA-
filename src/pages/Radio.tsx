@@ -10,6 +10,10 @@ type RoomRow = {
   created_at: string;
 };
 
+// A room is hidden from the list if its host has not sent a heartbeat for this long
+const STALE_MS = 60_000;
+const HEARTBEAT_MS = 30_000;
+
 const btn = (bg: string): React.CSSProperties => ({
   background: bg,
   color: "#fff",
@@ -27,12 +31,26 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
   const [micFailed, setMicFailed] = useState(false);
   const [ended, setEnded] = useState(false);
   const audioBox = useRef<HTMLDivElement>(null);
+  const hostRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
     const lk = new Room();
 
-    // Listen for the host ending the room
+    // Marks the room as ended in the database (only does something for the host)
+    const closeIfHost = () => {
+      if (!hostRef.current) return;
+      supabase
+        .from("radio_rooms")
+        .update({ is_live: false, ended_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(() => {});
+    };
+
+    window.addEventListener("pagehide", closeIfHost);
+
+    // Listen for the room being ended
     const channel = supabase
       .channel(`radio-room-${room.id}`)
       .on(
@@ -62,6 +80,7 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
         if (cancelled) return;
 
         setIsHost(data.isHost);
+        hostRef.current = data.isHost;
 
         const refresh = () => {
           const n = lk.remoteParticipants.size;
@@ -77,7 +96,14 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           track.detach().forEach((el) => el.remove());
         });
         lk.on(RoomEvent.ParticipantConnected, refresh);
-        lk.on(RoomEvent.ParticipantDisconnected, refresh);
+        lk.on(RoomEvent.ParticipantDisconnected, (participant) => {
+          refresh();
+          // If the host leaves, listeners see the room as ended right away
+          if (participant.identity === room.host_id) {
+            setEnded(true);
+            lk.disconnect();
+          }
+        });
 
         await lk.connect(data.url, data.token);
         await lk.startAudio();
@@ -88,6 +114,15 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           } catch {
             setMicFailed(true);
           }
+
+          // Heartbeat so the room disappears from the list if the host vanishes
+          heartbeat = setInterval(() => {
+            supabase
+              .from("radio_rooms")
+              .update({ last_seen: new Date().toISOString() })
+              .eq("id", room.id)
+              .then(() => {});
+          }, HEARTBEAT_MS);
         }
 
         refresh();
@@ -99,16 +134,20 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
 
     return () => {
       cancelled = true;
+      if (heartbeat) clearInterval(heartbeat);
+      window.removeEventListener("pagehide", closeIfHost);
+      closeIfHost();
       lk.disconnect();
       supabase.removeChannel(channel);
     };
-  }, [room.id]);
+  }, [room.id, room.host_id]);
 
   const endRoom = async () => {
     await supabase
       .from("radio_rooms")
       .update({ is_live: false, ended_at: new Date().toISOString() })
       .eq("id", room.id);
+    hostRef.current = false;
     onLeave();
   };
 
@@ -135,12 +174,13 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
       <div ref={audioBox} />
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button onClick={onLeave} style={btn("#6b7280")}>
-          {t("radio.leave")}
-        </button>
-        {isHost && !ended && (
+        {isHost && !ended ? (
           <button onClick={endRoom} style={btn("#dc2626")}>
             {t("radio.endRoom")}
+          </button>
+        ) : (
+          <button onClick={onLeave} style={btn("#6b7280")}>
+            {t("radio.leave")}
           </button>
         )}
       </div>
@@ -156,16 +196,19 @@ export default function Radio() {
   const [failed, setFailed] = useState(false);
 
   const loadRooms = async () => {
+    const cutoff = new Date(Date.now() - STALE_MS).toISOString();
     const { data } = await supabase
       .from("radio_rooms")
       .select("id, title, host_id, created_at")
       .eq("is_live", true)
+      .gt("last_seen", cutoff)
       .order("created_at", { ascending: false });
     setRooms(data || []);
   };
 
   useEffect(() => {
     loadRooms();
+
     const channel = supabase
       .channel("radio-rooms-list")
       .on(
@@ -176,7 +219,12 @@ export default function Radio() {
         }
       )
       .subscribe();
+
+    // Re-check periodically so stale rooms drop off the list
+    const interval = setInterval(loadRooms, HEARTBEAT_MS);
+
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -264,4 +312,4 @@ export default function Radio() {
       )}
     </div>
   );
-    }
+        }
