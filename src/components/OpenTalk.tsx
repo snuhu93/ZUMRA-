@@ -48,6 +48,8 @@ function OpenRoom({
   const [micFailed, setMicFailed] = useState(false);
   const [people, setPeople] = useState<Person[]>([]);
   const [ended, setEnded] = useState(false);
+  const [muteError, setMuteError] = useState("");
+  const [mutingId, setMutingId] = useState<string | null>(null);
   const audioBox = useRef<HTMLDivElement>(null);
   const hostRef = useRef(false);
   const lkRef = useRef<Room | null>(null);
@@ -196,6 +198,26 @@ function OpenRoom({
     }
   };
 
+  // Host yana kashe makirufon wani mahalarci
+  const muteOther = async (identity: string) => {
+    if (!isHost) return;
+    setMuteError("");
+    setMutingId(identity);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "livekit-mute-participant",
+        { body: { roomId: room.id, identity } }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    } catch (e: any) {
+      console.error("mute participant failed", e);
+      setMuteError(e?.message || String(e));
+    } finally {
+      setMutingId(null);
+    }
+  };
+
   const endRoom = async () => {
     await supabase
       .from("radio_rooms")
@@ -237,6 +259,17 @@ function OpenRoom({
           {micFailed && (
             <p style={{ color: "#dc2626" }}>{t("radio.micError")}</p>
           )}
+          {muteError && (
+            <p
+              style={{
+                color: "#dc2626",
+                fontSize: 13,
+                wordBreak: "break-word",
+              }}
+            >
+              {muteError}
+            </p>
+          )}
         </>
       )}
 
@@ -260,6 +293,15 @@ function OpenRoom({
           {people.map((p) => {
             const isSelf = p.id === user?.id;
             const icon = p.muted ? "🔇" : p.speaking ? "🔊" : "🎙️";
+            const canMuteThem = isHost && !isSelf && !p.muted;
+            const iconStyle: React.CSSProperties = {
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 22,
+              padding: 6,
+              lineHeight: 1,
+            };
             return (
               <div
                 key={p.id}
@@ -285,13 +327,19 @@ function OpenRoom({
                     type="button"
                     onClick={toggleMic}
                     aria-label={micOn ? t("radio.mute") : t("radio.unmute")}
+                    style={iconStyle}
+                  >
+                    {icon}
+                  </button>
+                ) : canMuteThem ? (
+                  <button
+                    type="button"
+                    onClick={() => muteOther(p.id)}
+                    disabled={mutingId === p.id}
+                    aria-label={t("radio.mute")}
                     style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: 22,
-                      padding: 6,
-                      lineHeight: 1,
+                      ...iconStyle,
+                      opacity: mutingId === p.id ? 0.5 : 1,
                     }}
                   >
                     {icon}
@@ -322,130 +370,4 @@ function OpenRoom({
   );
 }
 
-export default function OpenTalk() {
-  const t = useT();
-  const [rooms, setRooms] = useState<OpenRoomRow[]>([]);
-  const [title, setTitle] = useState("");
-  const [active, setActive] = useState<OpenRoomRow | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  const loadRooms = async () => {
-    const cutoff = new Date(Date.now() - STALE_MS).toISOString();
-    const { data } = await supabase
-      .from("radio_rooms")
-      .select("id, title, host_id, created_at")
-      .eq("is_live", true)
-      .eq("is_open", true)
-      .gt("last_seen", cutoff)
-      .order("created_at", { ascending: false });
-    setRooms(data || []);
-  };
-
-  useEffect(() => {
-    loadRooms();
-    const channel = supabase
-      .channel("open-rooms-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "radio_rooms" },
-        () => {
-          loadRooms();
-        }
-      )
-      .subscribe();
-    const interval = setInterval(loadRooms, HEARTBEAT_MS);
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const startRoom = async () => {
-    if (!title.trim()) return;
-    setFailed(false);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("radio_rooms")
-      .insert({ title: title.trim(), host_id: user.id, is_open: true })
-      .select("id, title, host_id, created_at")
-      .single();
-
-    if (error || !data) {
-      setFailed(true);
-      return;
-    }
-    setTitle("");
-    setActive(data);
-  };
-
-  if (active) {
-    return (
-      <OpenRoom
-        room={active}
-        onLeave={() => {
-          setActive(null);
-          loadRooms();
-        }}
-      />
-    );
-  }
-
-  return (
-    <div>
-      <h2>🎤 {t("open.title")}</h2>
-      <p style={{ fontSize: 14, opacity: 0.8 }}>{t("open.hint")}</p>
-
-      <div style={{ display: "flex", gap: 8, margin: "12px 0 24px" }}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={t("open.placeholder")}
-          style={{
-            flex: 1,
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-            background: "#1f2937",
-            color: "#ffffff",
-            WebkitTextFillColor: "#ffffff",
-            caretColor: "#ffffff",
-            fontSize: 16,
-          }}
-        />
-        <button onClick={startRoom} style={btn("#16a34a")}>
-          {t("open.start")}
-        </button>
-      </div>
-      {failed && <p style={{ color: "#dc2626" }}>{t("radio.error")}</p>}
-
-      <h3>{t("open.rooms")}</h3>
-      {rooms.length === 0 ? (
-        <p>{t("radio.noRooms")}</p>
-      ) : (
-        rooms.map((r) => (
-          <div
-            key={r.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: 12,
-              border: "1px solid #e5e7eb",
-              borderRadius: 10,
-              marginBottom: 8,
-            }}
-          >
-            <span>🔴 {r.title}</span>
-            <button onClick={() => setActive(r)} style={btn("#2563eb")}>
-              {t("open.join")}
-            </button>
-          </div>
-        ))
-      )}
-    </div>
-  );
-    }
+export default function OpenTalk
