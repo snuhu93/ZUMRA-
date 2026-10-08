@@ -370,4 +370,130 @@ function OpenRoom({
   );
 }
 
-export default function OpenTalk
+export default function OpenTalk() {
+  const t = useT();
+  const [rooms, setRooms] = useState<OpenRoomRow[]>([]);
+  const [title, setTitle] = useState("");
+  const [active, setActive] = useState<OpenRoomRow | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const loadRooms = async () => {
+    const cutoff = new Date(Date.now() - STALE_MS).toISOString();
+    const { data } = await supabase
+      .from("radio_rooms")
+      .select("id, title, host_id, created_at")
+      .eq("is_live", true)
+      .eq("is_open", true)
+      .gt("last_seen", cutoff)
+      .order("created_at", { ascending: false });
+    setRooms(data || []);
+  };
+
+  useEffect(() => {
+    loadRooms();
+    const channel = supabase
+      .channel("open-rooms-list")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "radio_rooms" },
+        () => {
+          loadRooms();
+        }
+      )
+      .subscribe();
+    const interval = setInterval(loadRooms, HEARTBEAT_MS);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const startRoom = async () => {
+    if (!title.trim()) return;
+    setFailed(false);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("radio_rooms")
+      .insert({ title: title.trim(), host_id: user.id, is_open: true })
+      .select("id, title, host_id, created_at")
+      .single();
+
+    if (error || !data) {
+      setFailed(true);
+      return;
+    }
+    setTitle("");
+    setActive(data);
+  };
+
+  if (active) {
+    return (
+      <OpenRoom
+        room={active}
+        onLeave={() => {
+          setActive(null);
+          loadRooms();
+        }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      <h2>🎤 {t("open.title")}</h2>
+      <p style={{ fontSize: 14, opacity: 0.8 }}>{t("open.hint")}</p>
+
+      <div style={{ display: "flex", gap: 8, margin: "12px 0 24px" }}>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={t("open.placeholder")}
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            background: "#1f2937",
+            color: "#ffffff",
+            WebkitTextFillColor: "#ffffff",
+            caretColor: "#ffffff",
+            fontSize: 16,
+          }}
+        />
+        <button onClick={startRoom} style={btn("#16a34a")}>
+          {t("open.start")}
+        </button>
+      </div>
+      {failed && <p style={{ color: "#dc2626" }}>{t("radio.error")}</p>}
+
+      <h3>{t("open.rooms")}</h3>
+      {rooms.length === 0 ? (
+        <p>{t("radio.noRooms")}</p>
+      ) : (
+        rooms.map((r) => (
+          <div
+            key={r.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 12,
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              marginBottom: 8,
+            }}
+          >
+            <span>🔴 {r.title}</span>
+            <button onClick={() => setActive(r)} style={btn("#2563eb")}>
+              {t("open.join")}
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+            }
