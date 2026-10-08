@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 type Rec = {
   id: string;
+  host_id: string;
   title: string | null;
   file_url: string;
   duration: number;
@@ -28,27 +29,70 @@ const recBtn = (bg: string): React.CSSProperties => ({
   cursor: "pointer",
 });
 
-// Jerin rikodi (kowa yana iya sauraro)
+// Jerin rikodi (kowa yana iya sauraro, host kaɗai yake iya share)
 export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
+  const { user } = useAuth();
   const [list, setList] = useState<Rec[]>([]);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     supabase
       .from("radio_recordings")
-      .select("id, title, file_url, duration, created_at")
+      .select("id, host_id, title, file_url, duration, created_at")
       .order("created_at", { ascending: false })
       .limit(20)
       .then(({ data }) => setList((data as Rec[]) || []));
   }, [reloadKey]);
 
+  const shareRec = async (r: Rec) => {
+    setNotice("");
+    const title = r.title || "Zumra Radio";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: title, url: r.file_url });
+        return;
+      }
+      await navigator.clipboard.writeText(r.file_url);
+      setNotice("Link copied");
+    } catch (e: any) {
+      // Idan mutum ya rufe menu ɗin raba da kansa, ba kuskure ba ne
+      if (e?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(r.file_url);
+        setNotice("Link copied");
+      } catch {
+        setNotice("Could not share the recording.");
+      }
+    }
+  };
+
   return (
     <div style={{ marginTop: 24 }}>
       <h3>🎧 Recordings</h3>
       {list.length === 0 && <p>No recordings yet.</p>}
+      {notice && <p style={{ color: "#16a34a" }}>{notice}</p>}
       {list.map((r) => (
         <div key={r.id} style={{ marginBottom: 14 }}>
-          <div>
-            {r.title} · {fmt(r.duration)}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 6,
+            }}
+          >
+            <span>
+              {r.title} · {fmt(r.duration)}
+            </span>
+            {user?.id === r.host_id && (
+              <button
+                onClick={() => shareRec(r)}
+                style={{ ...recBtn("#2563eb"), padding: "6px 10px", fontSize: 13 }}
+              >
+                📤 Share
+              </button>
+            )}
           </div>
           <audio controls src={r.file_url} style={{ width: "100%" }} />
         </div>
@@ -210,4 +254,4 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
       {msg && <p>{msg}</p>}
     </div>
   );
-}
+        }
