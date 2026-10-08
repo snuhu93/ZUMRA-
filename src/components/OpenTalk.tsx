@@ -103,6 +103,8 @@ function OpenRoom({
           muted: !p.isMicrophoneEnabled,
         }))
       );
+      // Daidaita maɓallin Unmute da ainihin yanayin makirufo
+      setMicOn(lk.localParticipant.isMicrophoneEnabled);
     };
 
     (async () => {
@@ -184,7 +186,7 @@ function OpenRoom({
   const toggleMic = async () => {
     const lk = lkRef.current;
     if (!lk) return;
-    const next = !micOn;
+    const next = !lk.localParticipant.isMicrophoneEnabled;
     try {
       setMicFailed(false);
       await lk.localParticipant.setMicrophoneEnabled(next);
@@ -255,29 +257,53 @@ function OpenRoom({
           </button>
 
           <h3>{t("open.people")}</h3>
-          {people.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: 10,
-                border: p.speaking
-                  ? "2px solid #16a34a"
-                  : "1px solid #e5e7eb",
-                borderRadius: 10,
-                marginBottom: 8,
-              }}
-            >
-              <span>
-                @{p.name}
-                {p.id === user?.id ? " " + t("open.you") : ""}
-                {p.id === room.host_id ? " 👑" : ""}
-              </span>
-              <span>{p.muted ? "🔇" : p.speaking ? "🔊" : "🎙️"}</span>
-            </div>
-          ))}
+          {people.map((p) => {
+            const isSelf = p.id === user?.id;
+            const icon = p.muted ? "🔇" : p.speaking ? "🔊" : "🎙️";
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: 10,
+                  border: p.speaking
+                    ? "2px solid #16a34a"
+                    : "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <span>
+                  @{p.name}
+                  {isSelf ? " " + t("open.you") : ""}
+                  {p.id === room.host_id ? " 👑" : ""}
+                </span>
+                {isSelf ? (
+                  <button
+                    type="button"
+                    onClick={toggleMic}
+                    aria-label={micOn ? t("radio.mute") : t("radio.unmute")}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 22,
+                      padding: 6,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 22, padding: 6, lineHeight: 1 }}>
+                    {icon}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </>
       )}
 
@@ -422,4 +448,4 @@ export default function OpenTalk() {
       )}
     </div>
   );
-}
+    }
