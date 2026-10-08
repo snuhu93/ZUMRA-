@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
+import { useT } from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -36,6 +37,7 @@ function OpenRoom({
   room: OpenRoomRow;
   onLeave: () => void;
 }) {
+  const t = useT();
   const { user, profile } = useAuth();
   const [status, setStatus] = useState<"connecting" | "live" | "error">(
     "connecting"
@@ -206,12 +208,12 @@ function OpenRoom({
       <h2 style={{ marginBottom: 4 }}>🎤 {room.title}</h2>
 
       {ended ? (
-        <p>Taron ya ƙare.</p>
+        <p>{t("radio.ended")}</p>
       ) : status === "connecting" ? (
-        <p>Ana haɗawa...</p>
+        <p>{t("radio.connecting")}</p>
       ) : status === "error" ? (
         <>
-          <p>Haɗawa ta gaza.</p>
+          <p>{t("radio.error")}</p>
           {errMsg && (
             <p
               style={{
@@ -227,13 +229,11 @@ function OpenRoom({
       ) : (
         <>
           <p style={{ color: "#16a34a", fontWeight: 600 }}>
-            🔴 Taro yana gudana · {people.length} a ciki
+            🔴 {t("open.live")} · {people.length} {t("open.inside")}
           </p>
-          {isHost && <p>👑 Kai ne ka buɗe wannan taron</p>}
+          {isHost && <p>👑 {t("radio.youAreHost")}</p>}
           {micFailed && (
-            <p style={{ color: "#dc2626" }}>
-              Ba a iya kunna mic ba. Ka bada izinin mic a wayarka.
-            </p>
+            <p style={{ color: "#dc2626" }}>{t("radio.micError")}</p>
           )}
         </>
       )}
@@ -251,10 +251,10 @@ function OpenRoom({
               margin: "8px 0 16px",
             }}
           >
-            {micOn ? "🔇 Kashe mic" : "🎙️ Kunna mic ka yi magana"}
+            {micOn ? "🔇 " + t("radio.mute") : "🎙️ " + t("radio.unmute")}
           </button>
 
-          <h3>Mahalarta</h3>
+          <h3>{t("open.people")}</h3>
           {people.map((p) => (
             <div
               key={p.id}
@@ -272,7 +272,7 @@ function OpenRoom({
             >
               <span>
                 @{p.name}
-                {p.id === user?.id ? " (kai)" : ""}
+                {p.id === user?.id ? " " + t("open.you") : ""}
                 {p.id === room.host_id ? " 👑" : ""}
               </span>
               <span>{p.muted ? "🔇" : p.speaking ? "🔊" : "🎙️"}</span>
@@ -284,11 +284,11 @@ function OpenRoom({
       <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
         {isHost && !ended ? (
           <button onClick={endRoom} style={btn("#dc2626")}>
-            Ƙare taro
+            {t("radio.endRoom")}
           </button>
         ) : (
           <button onClick={onLeave} style={btn("#6b7280")}>
-            Fita
+            {t("radio.leave")}
           </button>
         )}
       </div>
@@ -297,6 +297,7 @@ function OpenRoom({
 }
 
 export default function OpenTalk() {
+  const t = useT();
   const [rooms, setRooms] = useState<OpenRoomRow[]>([]);
   const [title, setTitle] = useState("");
   const [active, setActive] = useState<OpenRoomRow | null>(null);
@@ -369,16 +370,14 @@ export default function OpenTalk() {
 
   return (
     <div>
-      <h2>🎤 Taro (kowa yana magana)</h2>
-      <p style={{ fontSize: 14, opacity: 0.8 }}>
-        Duk wanda ya shiga zai iya magana kai tsaye, ba sai an ba shi izini ba.
-      </p>
+      <h2>🎤 {t("open.title")}</h2>
+      <p style={{ fontSize: 14, opacity: 0.8 }}>{t("open.hint")}</p>
 
       <div style={{ display: "flex", gap: 8, margin: "12px 0 24px" }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Taken taro"
+          placeholder={t("open.placeholder")}
           style={{
             flex: 1,
             padding: 10,
@@ -392,14 +391,14 @@ export default function OpenTalk() {
           }}
         />
         <button onClick={startRoom} style={btn("#16a34a")}>
-          Buɗe taro
+          {t("open.start")}
         </button>
       </div>
-      {failed && <p style={{ color: "#dc2626" }}>Buɗe taro ya gaza.</p>}
+      {failed && <p style={{ color: "#dc2626" }}>{t("radio.error")}</p>}
 
-      <h3>Tarurruka masu gudana</h3>
+      <h3>{t("open.rooms")}</h3>
       {rooms.length === 0 ? (
-        <p>Babu taro a yanzu</p>
+        <p>{t("radio.noRooms")}</p>
       ) : (
         rooms.map((r) => (
           <div
@@ -416,7 +415,7 @@ export default function OpenTalk() {
           >
             <span>🔴 {r.title}</span>
             <button onClick={() => setActive(r)} style={btn("#2563eb")}>
-              Shiga
+              {t("open.join")}
             </button>
           </div>
         ))
