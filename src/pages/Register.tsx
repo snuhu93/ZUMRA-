@@ -9,21 +9,44 @@ const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const inputClass =
   'w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900';
 
+function EyeIcon({ off }: { off: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+      {off && <line x1="3" y1="3" x2="21" y2="21" />}
+    </svg>
+  );
+}
+
 export default function Register() {
   const t = useT();
   const { signUp } = useAuth();
   const location = useLocation();
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [otherName, setOtherName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
   const validate = (): string | null => {
-    if (fullName.trim().length < 2) return t('full_name_error');
+    if (firstName.trim().length < 2) return t('full_name_error');
+    if (otherName.trim().length < 1) return t('full_name_error');
     if (!USERNAME_RE.test(username)) return t('username_error');
     if (password.length < 8) return t('password_error');
     return null;
@@ -38,6 +61,8 @@ export default function Register() {
     }
     setError(null);
     setSubmitting(true);
+    // Combine both names so the rest of the app keeps using one full name
+    const fullName = `${firstName.trim()} ${otherName.trim()}`;
     const { error: signUpError } = await signUp({ email, password, fullName, username, phone });
     setSubmitting(false);
     if (signUpError) {
@@ -74,9 +99,16 @@ export default function Register() {
         )}
         <input
           required
-          placeholder={t('full_name')}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          placeholder={t('first_name')}
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          className={inputClass}
+        />
+        <input
+          required
+          placeholder={t('other_name')}
+          value={otherName}
+          onChange={(e) => setOtherName(e.target.value)}
           className={inputClass}
         />
         <input
@@ -101,14 +133,24 @@ export default function Register() {
           onChange={(e) => setPhone(e.target.value)}
           className={inputClass}
         />
-        <input
-          type="password"
-          required
-          placeholder={t('password_placeholder')}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClass}
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            required
+            placeholder={t('password_placeholder')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={`${inputClass} pr-11`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <EyeIcon off={showPassword} />
+          </button>
+        </div>
         <button
           type="submit"
           disabled={submitting}
