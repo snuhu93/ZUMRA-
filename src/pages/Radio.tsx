@@ -562,6 +562,11 @@ export default function Radio() {
             padding: 10,
             borderRadius: 8,
             border: "1px solid #d1d5db",
+            background: "#1f2937",
+            color: "#ffffff",
+            WebkitTextFillColor: "#ffffff",
+            caretColor: "#ffffff",
+            fontSize: 16,
           }}
         />
         <button onClick={startRoom} style={btn("#16a34a")}>
@@ -598,4 +603,4 @@ export default function Radio() {
       <RecordingsList />
     </div>
   );
-  }
+}
