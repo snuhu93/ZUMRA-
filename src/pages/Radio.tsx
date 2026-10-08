@@ -4,6 +4,7 @@ import { useT } from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import RadioRecorder, { RecordingsList } from "@/components/RadioRecorder";
+import OpenTalk from "@/components/OpenTalk";
 
 type RoomRow = {
   id: string;
@@ -478,6 +479,7 @@ export default function Radio() {
   const [title, setTitle] = useState("");
   const [active, setActive] = useState<RoomRow | null>(null);
   const [failed, setFailed] = useState(false);
+  const [tab, setTab] = useState<"radio" | "open">("radio");
 
   const loadRooms = async () => {
     const cutoff = new Date(Date.now() - STALE_MS).toISOString();
@@ -485,6 +487,7 @@ export default function Radio() {
       .from("radio_rooms")
       .select("id, title, host_id, created_at")
       .eq("is_live", true)
+      .eq("is_open", false)
       .gt("last_seen", cutoff)
       .order("created_at", { ascending: false });
     setRooms(data || []);
@@ -548,8 +551,35 @@ export default function Radio() {
     );
   }
 
+  const tabs = (
+    <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <button
+        onClick={() => setTab("radio")}
+        style={btn(tab === "radio" ? "#16a34a" : "#374151")}
+      >
+        📻 Radio
+      </button>
+      <button
+        onClick={() => setTab("open")}
+        style={btn(tab === "open" ? "#16a34a" : "#374151")}
+      >
+        🎤 Taro
+      </button>
+    </div>
+  );
+
+  if (tab === "open") {
+    return (
+      <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
+        {tabs}
+        <OpenTalk />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
+      {tabs}
       <h2>📻 {t("radio.title")}</h2>
 
       <div style={{ display: "flex", gap: 8, margin: "12px 0 24px" }}>
