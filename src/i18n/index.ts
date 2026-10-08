@@ -230,7 +230,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'Approve',
     'radio.decline': 'Decline',
     'radio.onStage': 'On stage',
-    'radio.removeSpeaker': 'Remove'
+    'radio.removeSpeaker': 'Remove',
+    'open.tab': 'Talk',
+    'open.title': 'Open talk (everyone can speak)',
+    'open.hint': 'Anyone who joins can speak right away, no permission needed.',
+    'open.placeholder': 'Meeting title',
+    'open.start': 'Start meeting',
+    'open.live': 'Meeting in progress',
+    'open.inside': 'inside',
+    'open.rooms': 'Live meetings',
+    'open.join': 'Join',
+    'open.people': 'Participants',
+    'open.you': '(you)'
   },
   ha: {
     tagline: 'Haɗu. Raba. Kasance.',
@@ -448,7 +459,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'Amince',
     'radio.decline': 'Ƙi',
     'radio.onStage': 'A kan dandamali',
-    'radio.removeSpeaker': 'Cire'
+    'radio.removeSpeaker': 'Cire',
+    'open.tab': 'Taro',
+    'open.title': 'Taro (kowa yana magana)',
+    'open.hint': 'Duk wanda ya shiga zai iya magana kai tsaye, ba sai an ba shi izini ba.',
+    'open.placeholder': 'Taken taro',
+    'open.start': 'Buɗe taro',
+    'open.live': 'Taro yana gudana',
+    'open.inside': 'a ciki',
+    'open.rooms': 'Tarurruka masu gudana',
+    'open.join': 'Shiga',
+    'open.people': 'Mahalarta',
+    'open.you': '(kai)'
   },
   fr: {
     tagline: 'Connectez-vous. Partagez. Appartenez.',
@@ -666,7 +688,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'Approuver',
     'radio.decline': 'Refuser',
     'radio.onStage': 'Sur scène',
-    'radio.removeSpeaker': 'Retirer'
+    'radio.removeSpeaker': 'Retirer',
+    'open.tab': 'Réunion',
+    'open.title': 'Réunion ouverte (tout le monde peut parler)',
+    'open.hint': 'Toute personne qui rejoint peut parler tout de suite, sans autorisation.',
+    'open.placeholder': 'Titre de la réunion',
+    'open.start': 'Démarrer la réunion',
+    'open.live': 'Réunion en cours',
+    'open.inside': 'présents',
+    'open.rooms': 'Réunions en cours',
+    'open.join': 'Rejoindre',
+    'open.people': 'Participants',
+    'open.you': '(vous)'
   },
   ar: {
     tagline: 'تواصل. شارك. انتمِ.',
@@ -884,7 +917,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'موافقة',
     'radio.decline': 'رفض',
     'radio.onStage': 'على المنصة',
-    'radio.removeSpeaker': 'إزالة'
+    'radio.removeSpeaker': 'إزالة',
+    'open.tab': 'اجتماع',
+    'open.title': 'اجتماع مفتوح (يمكن للجميع التحدث)',
+    'open.hint': 'يمكن لأي شخص ينضم أن يتحدث مباشرة دون الحاجة إلى إذن.',
+    'open.placeholder': 'عنوان الاجتماع',
+    'open.start': 'ابدأ الاجتماع',
+    'open.live': 'الاجتماع جارٍ',
+    'open.inside': 'مشاركين',
+    'open.rooms': 'الاجتماعات الجارية',
+    'open.join': 'انضم',
+    'open.people': 'المشاركون',
+    'open.you': '(أنت)'
   },
   yo: {
     tagline: 'Sopọ. Pín. Jẹ́ apá kan.',
@@ -1102,7 +1146,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'Fọwọ́ sí i',
     'radio.decline': 'Kọ̀',
     'radio.onStage': 'Lórí pèpéle',
-    'radio.removeSpeaker': 'Yọ kúrò'
+    'radio.removeSpeaker': 'Yọ kúrò',
+    'open.tab': 'Ìpàdé',
+    'open.title': 'Ìpàdé gbangba (gbogbo ènìyàn lè sọ̀rọ̀)',
+    'open.hint': 'Ẹnikẹ́ni tó bá wọlé lè sọ̀rọ̀ lẹ́sẹ̀kẹsẹ̀, kò sí ìdí fún ìyọ̀nda.',
+    'open.placeholder': 'Àkọ́lé ìpàdé',
+    'open.start': 'Bẹ̀rẹ̀ ìpàdé',
+    'open.live': 'Ìpàdé ń lọ lọ́wọ́',
+    'open.inside': 'nínú rẹ̀',
+    'open.rooms': 'Àwọn ìpàdé tó ń lọ',
+    'open.join': 'Wọlé',
+    'open.people': 'Àwọn olùkópa',
+    'open.you': '(ìwọ)'
   },
   ig: {
     tagline: 'Jikọọ. Kesaa. Bụrụ nke ọgbakọ.',
@@ -1320,7 +1375,18 @@ const translations: Record<Lang, Record<string, string>> = {
     'radio.approve': 'Nabata',
     'radio.decline': 'Jụ',
     'radio.onStage': 'N’elu ogbo',
-    'radio.removeSpeaker': 'Wepụ'
+    'radio.removeSpeaker': 'Wepụ',
+    'open.tab': 'Nzukọ',
+    'open.title': 'Nzukọ mepere emepe (onye ọ bụla nwere ike ikwu okwu)',
+    'open.hint': 'Onye ọ bụla bata nwere ike ikwu okwu ozugbo, achọghị ikike.',
+    'open.placeholder': 'Isiokwu nzukọ',
+    'open.start': 'Malite nzukọ',
+    'open.live': 'Nzukọ na-aga n’ihu',
+    'open.inside': 'n’ime',
+    'open.rooms': 'Nzukọ na-aga n’ihu',
+    'open.join': 'Banye',
+    'open.people': 'Ndị so',
+    'open.you': '(gị)'
   }
 };
 
@@ -1369,4 +1435,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-      }
+    }
