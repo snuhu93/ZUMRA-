@@ -563,7 +563,7 @@ export default function Radio() {
         onClick={() => setTab("open")}
         style={btn(tab === "open" ? "#16a34a" : "#374151")}
       >
-        🎤 Taro
+                🎤 {t("open.tab")}
       </button>
     </div>
   );
