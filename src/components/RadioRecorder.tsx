@@ -12,6 +12,8 @@ type Rec = {
   created_at: string;
 };
 
+const BUCKET = "radio-recordings";
+
 const fmt = (s: number) =>
   `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
@@ -29,11 +31,20 @@ const recBtn = (bg: string): React.CSSProperties => ({
   cursor: "pointer",
 });
 
-// Jerin rikodi (kowa yana iya sauraro, host kaɗai yake iya share)
+// Get the storage file path from a public URL
+function pathFromUrl(url: string) {
+  const marker = `/${BUCKET}/`;
+  const i = url.indexOf(marker);
+  if (i === -1) return null;
+  return decodeURIComponent(url.slice(i + marker.length).split("?")[0]);
+}
+
+// List of recordings (everyone can listen, only the host can share or delete)
 export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
   const { user } = useAuth();
   const [list, setList] = useState<Rec[]>([]);
   const [notice, setNotice] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -55,7 +66,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
       await navigator.clipboard.writeText(r.file_url);
       setNotice("Link copied");
     } catch (e: any) {
-      // Idan mutum ya rufe menu ɗin raba da kansa, ba kuskure ba ne
+      // If the person closes the share menu themselves, it is not an error
       if (e?.name === "AbortError") return;
       try {
         await navigator.clipboard.writeText(r.file_url);
@@ -64,6 +75,44 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
         setNotice("Could not share the recording.");
       }
     }
+  };
+
+  const deleteRec = async (r: Rec) => {
+    if (!user || user.id !== r.host_id) return;
+    if (!window.confirm("Delete this recording? This cannot be undone.")) {
+      return;
+    }
+    setNotice("");
+    setDeletingId(r.id);
+    try {
+      // Delete the database row first; .select() confirms a row was removed
+      const { data, error } = await supabase
+        .from("radio_recordings")
+        .delete()
+        .eq("id", r.id)
+        .eq("host_id", user.id)
+        .select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Not allowed to delete this recording");
+      }
+
+      // Then delete the audio file from storage
+      const path = pathFromUrl(r.file_url);
+      if (path) {
+        const { error: stErr } = await supabase.storage
+          .from(BUCKET)
+          .remove([path]);
+        if (stErr) console.error(stErr);
+      }
+
+      setList((prev) => prev.filter((x) => x.id !== r.id));
+      setNotice("Recording deleted");
+    } catch (e) {
+      console.error(e);
+      setNotice("Could not delete the recording.");
+    }
+    setDeletingId(null);
   };
 
   return (
@@ -86,12 +135,29 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
               {r.title} · {fmt(r.duration)}
             </span>
             {user?.id === r.host_id && (
-              <button
-                onClick={() => shareRec(r)}
-                style={{ ...recBtn("#2563eb"), padding: "6px 10px", fontSize: 13 }}
-              >
-                📤 Share
-              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => shareRec(r)}
+                  style={{
+                    ...recBtn("#2563eb"),
+                    padding: "6px 10px",
+                    fontSize: 13,
+                  }}
+                >
+                  📤 Share
+                </button>
+                <button
+                  onClick={() => deleteRec(r)}
+                  disabled={deletingId === r.id}
+                  style={{
+                    ...recBtn("#dc2626"),
+                    padding: "6px 10px",
+                    fontSize: 13,
+                  }}
+                >
+                  {deletingId === r.id ? "..." : "🗑 Delete"}
+                </button>
+              </div>
             )}
           </div>
           <audio controls src={r.file_url} style={{ width: "100%" }} />
@@ -101,7 +167,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
   );
 }
 
-// Maɓallin rikodi (host kaɗai)
+// Record button (host only)
 export default function RadioRecorder({ lk }: { lk: Room | null }) {
   const { user } = useAuth();
   const [recording, setRecording] = useState(false);
@@ -143,20 +209,20 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
         ctx.createMediaStreamSource(new MediaStream([mt])).connect(dest);
       };
 
-      // Muryar host
+      // Host voice
       const localPub = lk.localParticipant.getTrackPublication(
         Track.Source.Microphone
       );
       addTrack(localPub?.track?.mediaStreamTrack);
 
-      // Muryar masu magana da suka riga suke cikin ɗakin
+      // Speakers who are already in the room
       lk.remoteParticipants.forEach((p) => {
         p.audioTrackPublications.forEach((pub) => {
           addTrack(pub.track?.mediaStreamTrack);
         });
       });
 
-      // Masu magana da suka shigo bayan an fara rikodi
+      // Speakers who join after recording has started
       const onSub = (track: any) => {
         if (track.kind === Track.Kind.Audio) addTrack(track.mediaStreamTrack);
       };
@@ -211,13 +277,11 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
       const path = `${user.id}/${Date.now()}.${ext}`;
 
       const { error: upErr } = await supabase.storage
-        .from("radio-recordings")
+        .from(BUCKET)
         .upload(path, blob, { contentType: mime });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage
-        .from("radio-recordings")
-        .getPublicUrl(path);
+      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
       const { error: dbErr } = await supabase.from("radio_recordings").insert({
         host_id: user.id,
@@ -254,5 +318,4 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
       {msg && <p>{msg}</p>}
     </div>
   );
-}
-      
+                        }
