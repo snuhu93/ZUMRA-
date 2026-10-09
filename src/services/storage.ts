@@ -14,6 +14,29 @@ const MIN_STATUS_MS = 800;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+/** True when the request never reached the server (offline, paused project, DNS, CORS, wrong URL). */
+function isNetworkError(err: any): boolean {
+  const msg = String(err?.message ?? '').toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('network request failed') ||
+    msg.includes('networkerror') ||
+    msg.includes('load failed')
+  );
+}
+
+/** Turns raw errors into messages a person can understand. */
+export function toFriendlyError(err: unknown): Error {
+  if (isNetworkError(err)) {
+    return new Error(
+      'Cannot reach the server. Check your internet connection and try again. If it keeps happening, the server may be paused or unreachable.'
+    );
+  }
+  if (err instanceof Error) return err;
+  const message = (err as any)?.message;
+  return new Error(typeof message === 'string' && message ? message : 'Upload failed. Please try again.');
+}
+
 /** Network failures and server-side errors are worth retrying; permission/validation errors are not. */
 function isRetryable(err: any): boolean {
   const status = Number(err?.statusCode ?? err?.status);
@@ -36,17 +59,29 @@ export async function uploadImage(params: {
   dataSaver: boolean;
 }): Promise<{ path: string; publicUrl: string }> {
   const compressed = await compressImage(params.file, { kind: params.kind, dataSaver: params.dataSaver });
-  const path = buildPath(params.userId, params.file.name.replace(/\.[^.]+$/, '.webp'));
 
-  const { error } = await supabase.storage.from(params.bucket).upload(path, compressed, {
-    cacheControl: '31536000',
-    upsert: false,
-    contentType: 'image/webp'
-  });
-  if (error) throw error;
+  let lastError: unknown = null;
 
-  const { data } = supabase.storage.from(params.bucket).getPublicUrl(path);
-  return { path, publicUrl: data.publicUrl };
+  for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
+    const path = buildPath(params.userId, params.file.name.replace(/\.[^.]+$/, '.webp'));
+
+    const { error } = await supabase.storage.from(params.bucket).upload(path, compressed, {
+      cacheControl: '31536000',
+      upsert: false,
+      contentType: 'image/webp'
+    });
+
+    if (!error) {
+      const { data } = supabase.storage.from(params.bucket).getPublicUrl(path);
+      return { path, publicUrl: data.publicUrl };
+    }
+
+    lastError = error;
+    if (attempt === MAX_UPLOAD_ATTEMPTS || !isRetryable(error)) break;
+    await sleep(RETRY_DELAYS_MS[attempt - 1]);
+  }
+
+  throw toFriendlyError(lastError);
 }
 
 export async function uploadVideo(params: {
@@ -105,8 +140,8 @@ export async function uploadVideo(params: {
     await sleep(RETRY_DELAYS_MS[attempt - 1]);
   }
 
-  throw lastError instanceof Error
-    ? lastError
+  throw lastError
+    ? toFriendlyError(lastError)
     : new Error('Video upload failed. Please check your connection and try again.');
 }
 
@@ -176,7 +211,7 @@ export async function uploadMessageMedia(params: { file: File; userId: string; c
   const path = `${params.conversationId}/${params.userId}/${Date.now()}-${params.file.name}`;
   const body = isImage ? await compressImage(params.file, { kind: 'post', dataSaver: params.dataSaver }) : params.file;
   const { error } = await supabase.storage.from('message-media').upload(path, body, { upsert: false });
-  if (error) throw error;
+  if (error) throw toFriendlyError(error);
   return path;
 }
 
@@ -189,4 +224,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-                                  }
+}
