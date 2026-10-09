@@ -192,13 +192,7 @@ export default function RadioRecorder({
   useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
-      const rec = recorderRef.current;
-      if (rec && rec.state === "recording") {
-        // Room closed while recording: stop so onstop saves it
-        rec.stop();
-      } else {
-        cleanupRef.current();
-      }
+      cleanupRef.current();
     };
   }, []);
 
@@ -221,7 +215,7 @@ export default function RadioRecorder({
         ctx.createMediaStreamSource(new MediaStream([mt])).connect(dest);
       };
 
-      // Host voice (if the mic is already on)
+      // Host voice
       const localPub = lk.localParticipant.getTrackPublication(
         Track.Source.Microphone
       );
@@ -240,17 +234,8 @@ export default function RadioRecorder({
       };
       lk.on(RoomEvent.TrackSubscribed, onSub);
 
-      // Host turns the mic on after recording has started
-      const onLocalPub = (pub: any) => {
-        if (pub?.source === Track.Source.Microphone) {
-          addTrack(pub.track?.mediaStreamTrack);
-        }
-      };
-      lk.on(RoomEvent.LocalTrackPublished, onLocalPub);
-
       cleanupRef.current = () => {
         lk.off(RoomEvent.TrackSubscribed, onSub);
-        lk.off(RoomEvent.LocalTrackPublished, onLocalPub);
         ctx.close().catch(() => {});
       };
 
@@ -339,4 +324,4 @@ export default function RadioRecorder({
       {msg && <p>{msg}</p>}
     </div>
   );
-             }
+                    }
