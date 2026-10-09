@@ -21,6 +21,13 @@ type HandRow = {
   status: "raised" | "speaking";
 };
 
+type Person = {
+  id: string;
+  name: string;
+  speaking: boolean;
+  muted: boolean;
+};
+
 // A room is hidden from the list if its host has not sent a heartbeat for this long
 const STALE_MS = 60_000;
 const HEARTBEAT_MS = 30_000;
@@ -65,11 +72,14 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
   const [isSpeaker, setIsSpeaker] = useState(false);
   const [hands, setHands] = useState<HandRow[]>([]);
   const [ended, setEnded] = useState(false);
+  const [people, setPeople] = useState<Person[]>([]);
   const audioBox = useRef<HTMLDivElement>(null);
   const hostRef = useRef(false);
   const lkRef = useRef<Room | null>(null);
   const userIdRef = useRef<string | undefined>(user?.id);
   userIdRef.current = user?.id;
+  const nameRef = useRef<string>(profile?.username || "user");
+  nameRef.current = profile?.username || "user";
 
   const loadHands = async () => {
     const { data } = await supabase
@@ -142,6 +152,31 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
       )
       .subscribe();
 
+    // Builds the list of people who can speak (host + approved speakers)
+    // with their real speaking / muted state, same idea as Open Talk
+    const refreshPeople = () => {
+      const local = lk.localParticipant;
+      const all = [local, ...Array.from(lk.remoteParticipants.values())];
+      const stage = all.filter(
+        (p) => p.identity === room.host_id || !!p.permissions?.canPublish
+      );
+      setPeople(
+        stage.map((p) => ({
+          id: p.identity,
+          name:
+            p === local
+              ? nameRef.current
+              : p.name || "user",
+          speaking: p.isSpeaking,
+          muted: !p.isMicrophoneEnabled,
+        }))
+      );
+      // Keep the Mute / Unmute button in sync with the real mic state
+      if (local.permissions?.canPublish || hostRef.current) {
+        setMicOn(local.isMicrophoneEnabled);
+      }
+    };
+
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("livekit-token", {
@@ -162,6 +197,7 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
         const refresh = () => {
           const n = lk.remoteParticipants.size;
           setCount(data.isHost ? n : Math.max(n - 1, 0));
+          refreshPeople();
         };
 
         lk.on(RoomEvent.TrackSubscribed, (track) => {
@@ -182,8 +218,18 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
           }
         });
 
+        // Speaking indicator and mute state for everyone on stage
+        lk.on(RoomEvent.ActiveSpeakersChanged, refreshPeople);
+        lk.on(RoomEvent.TrackMuted, refreshPeople);
+        lk.on(RoomEvent.TrackUnmuted, refreshPeople);
+        lk.on(RoomEvent.LocalTrackPublished, refreshPeople);
+        lk.on(RoomEvent.LocalTrackUnpublished, refreshPeople);
+        lk.on(RoomEvent.TrackPublished, refreshPeople);
+        lk.on(RoomEvent.TrackUnpublished, refreshPeople);
+
         // When the host approves or removes this person as a speaker
         lk.on(RoomEvent.ParticipantPermissionsChanged, async () => {
+          refreshPeople();
           if (hostRef.current) return;
           const can = !!lk.localParticipant.permissions?.canPublish;
           setIsSpeaker(can);
@@ -194,6 +240,7 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
             setMicFailed(true);
             setMicOn(false);
           }
+          refreshPeople();
         });
 
         await lk.connect(data.url, data.token);
@@ -270,6 +317,7 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
     if (!lk) return;
     const next = !micOn;
     try {
+      setMicFailed(false);
       await lk.localParticipant.setMicrophoneEnabled(next);
       setMicOn(next);
     } catch {
@@ -389,6 +437,60 @@ function RadioRoom({ room, onLeave }: { room: RoomRow; onLeave: () => void }) {
 
           {/* Rikodin murya (host kaɗai) */}
           {isHost && <RadioRecorder lk={lkRef.current} />}
+        </div>
+      )}
+
+      {/* People on stage (host + speakers) with live speaking indicator */}
+      {!ended && status === "live" && people.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <h3>{t("open.people")}</h3>
+          {people.map((p) => {
+            const isSelf = p.id === user?.id;
+            const icon = p.muted ? "🔇" : p.speaking ? "🔊" : "🎙️";
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: 10,
+                  border: p.speaking
+                    ? "2px solid #16a34a"
+                    : "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <span>
+                  @{p.name}
+                  {isSelf ? " " + t("open.you") : ""}
+                  {p.id === room.host_id ? " 👑" : ""}
+                </span>
+                {isSelf ? (
+                  <button
+                    type="button"
+                    onClick={toggleMic}
+                    aria-label={micOn ? t("radio.mute") : t("radio.unmute")}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 22,
+                      padding: 6,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 22, padding: 6, lineHeight: 1 }}>
+                    {icon}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -563,7 +665,7 @@ export default function Radio() {
         onClick={() => setTab("open")}
         style={btn(tab === "open" ? "#16a34a" : "#374151")}
       >
-                🎤 {t("open.tab")}
+        🎤 {t("open.tab")}
       </button>
     </div>
   );
@@ -633,4 +735,4 @@ export default function Radio() {
       <RecordingsList />
     </div>
   );
-}
+  }
