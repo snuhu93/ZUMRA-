@@ -12,6 +12,13 @@ type Rec = {
   created_at: string;
 };
 
+type Pending = {
+  blob: Blob;
+  mime: string;
+  url: string;
+  seconds: number;
+};
+
 const BUCKET = "radio-recordings";
 
 const fmt = (s: number) =>
@@ -167,7 +174,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
   );
 }
 
-// Record button (host only)
+// Record button (host only). After Stop, the host chooses to Save or Discard.
 export default function RadioRecorder({
   lk,
   label = "Radio",
@@ -180,7 +187,7 @@ export default function RadioRecorder({
   const [seconds, setSeconds] = useState(0);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
+  const [pending, setPending] = useState<Pending | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -188,13 +195,23 @@ export default function RadioRecorder({
   const secondsRef = useRef(0);
   const ctxRef = useRef<AudioContext | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
+  const pendingUrlRef = useRef<string>("");
 
   useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
       cleanupRef.current();
+      if (pendingUrlRef.current) URL.revokeObjectURL(pendingUrlRef.current);
     };
   }, []);
+
+  const clearPending = () => {
+    if (pendingUrlRef.current) {
+      URL.revokeObjectURL(pendingUrlRef.current);
+      pendingUrlRef.current = "";
+    }
+    setPending(null);
+  };
 
   const start = async () => {
     setMsg("");
@@ -250,7 +267,20 @@ export default function RadioRecorder({
       };
       rec.onstop = () => {
         cleanupRef.current();
-        save(rec.mimeType || mime || "audio/webm");
+        const finalMime = rec.mimeType || mime || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: finalMime });
+        if (blob.size === 0) {
+          setMsg("Nothing was recorded.");
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        pendingUrlRef.current = url;
+        setPending({
+          blob,
+          mime: finalMime,
+          url,
+          seconds: secondsRef.current,
+        });
       };
       rec.start(1000);
       recorderRef.current = rec;
@@ -274,11 +304,13 @@ export default function RadioRecorder({
     setRecording(false);
   };
 
-  const save = async (mime: string) => {
-    if (!user) return;
+  // Only runs when the host presses Save
+  const save = async () => {
+    if (!user || !pending) return;
     setSaving(true);
+    setMsg("");
     try {
-      const blob = new Blob(chunksRef.current, { type: mime });
+      const { blob, mime, seconds: dur } = pending;
       const ext = mime.includes("mp4") ? "m4a" : "webm";
       const path = `${user.id}/${Date.now()}.${ext}`;
 
@@ -293,35 +325,61 @@ export default function RadioRecorder({
         host_id: user.id,
         title: label + " " + new Date().toLocaleString(),
         file_url: pub.publicUrl,
-        duration: secondsRef.current,
+        duration: dur,
       });
       if (dbErr) throw dbErr;
 
+      clearPending();
       setMsg("Saved ✅");
-      setReloadKey((k) => k + 1);
     } catch (e) {
+      // Keep the recording so the host can try Save again
       console.error(e);
-      setMsg("Could not save the recording.");
+      setMsg("Could not save the recording. Try again.");
     }
     setSaving(false);
   };
 
+  const discard = () => {
+    if (!window.confirm("Discard this recording?")) return;
+    clearPending();
+    setMsg("Recording discarded");
+  };
+
   return (
     <div style={{ marginTop: 16 }}>
-      {!recording ? (
-        <button
-          onClick={start}
-          disabled={saving}
-          style={recBtn("#dc2626")}
-        >
-          {saving ? "Saving..." : "🔴 Record"}
-        </button>
-      ) : (
+      {recording ? (
         <button onClick={stop} style={recBtn("#374151")}>
           ⏹ Stop · {fmt(seconds)}
+        </button>
+      ) : pending ? (
+        <div>
+          <p style={{ marginBottom: 6 }}>
+            Recording ready · {fmt(pending.seconds)} (not saved yet)
+          </p>
+          <audio controls src={pending.url} style={{ width: "100%" }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button
+              onClick={save}
+              disabled={saving}
+              style={recBtn("#16a34a")}
+            >
+              {saving ? "Saving..." : "💾 Save"}
+            </button>
+            <button
+              onClick={discard}
+              disabled={saving}
+              style={recBtn("#6b7280")}
+            >
+              🗑 Discard
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={start} style={recBtn("#dc2626")}>
+          🔴 Record
         </button>
       )}
       {msg && <p>{msg}</p>}
     </div>
   );
-                    }
+  }
