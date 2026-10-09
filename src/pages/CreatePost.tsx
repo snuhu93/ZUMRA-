@@ -4,7 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useT } from '@/i18n';
 import { createPost } from '@/services/posts';
-import { uploadImage, uploadVideo, generateVideoThumbnail, type VideoStatus } from '@/services/storage';
+import {
+  uploadImage,
+  uploadVideo,
+  generateVideoThumbnail,
+  toFriendlyError,
+  type VideoStatus
+} from '@/services/storage';
 import type { PrivacyLevel } from '@/types/database';
 
 interface PendingMedia {
@@ -69,6 +75,8 @@ export default function CreatePost() {
     }
     setError(null);
     setUploading(true);
+    // Tracks which step is running so an error can say where it failed
+    let step = '';
     try {
       const uploaded: { path: string; type: 'image' | 'video'; thumbnailPath?: string }[] = [];
       for (let i = 0; i < media.length; i++) {
@@ -79,6 +87,7 @@ export default function CreatePost() {
             : '';
 
         if (m.type === 'image') {
+          step = 'Photo upload';
           setProgress(`${prefix}${t('uploading_photo')}`);
           const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
           uploaded.push({ path, type: 'image' });
@@ -86,6 +95,7 @@ export default function CreatePost() {
           // Step 1: create the thumbnail first (from the original file, fast)
           let thumbnailPath: string | undefined;
           try {
+            step = 'Thumbnail';
             setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
             const [thumbFile] = await Promise.all([
               generateVideoThumbnail(m.file),
@@ -105,6 +115,7 @@ export default function CreatePost() {
           }
 
           // Step 2: compress, then upload the video
+          step = 'Video upload';
           let currentStatus = tr('preparing_video', 'Preparing video…');
           setProgress(`${prefix}${currentStatus}`);
 
@@ -124,6 +135,7 @@ export default function CreatePost() {
           uploaded.push({ path, type: 'video', thumbnailPath });
         }
       }
+      step = 'Saving post';
       setProgress(t('saving'));
       const postId = await createPost({
         authorId: user.id,
@@ -134,7 +146,10 @@ export default function CreatePost() {
       });
       navigate(`/post/${postId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('something_went_wrong'));
+      console.error(`CreatePost failed at step "${step}"`, err);
+      const friendly = toFriendlyError(err);
+      const message = friendly.message || t('something_went_wrong');
+      setError(step ? `${step}: ${message}` : message);
     } finally {
       setUploading(false);
       setProgress('');
@@ -258,4 +273,4 @@ export default function CreatePost() {
       )}
     </div>
   );
-    }
+  }
