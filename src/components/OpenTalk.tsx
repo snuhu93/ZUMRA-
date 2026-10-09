@@ -3,6 +3,7 @@ import { Room, RoomEvent, Track } from "livekit-client";
 import { useT } from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
+import RadioRecorder, { RecordingsList } from "@/components/RadioRecorder";
 
 type OpenRoomRow = {
   id: string;
@@ -355,6 +356,11 @@ function OpenRoom({
         </>
       )}
 
+      {/* Record button: host only */}
+      {isHost && !ended && status === "live" && (
+        <RadioRecorder lk={lkRef.current} label="Meeting" />
+      )}
+
       <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
         {isHost && !ended ? (
           <button onClick={endRoom} style={btn("#dc2626")}>
@@ -494,6 +500,8 @@ export default function OpenTalk() {
           </div>
         ))
       )}
+
+      <RecordingsList />
     </div>
   );
-            }
+  }
