@@ -168,7 +168,13 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
 }
 
 // Record button (host only)
-export default function RadioRecorder({ lk }: { lk: Room | null }) {
+export default function RadioRecorder({
+  lk,
+  label = "Radio",
+}: {
+  lk: Room | null;
+  label?: string;
+}) {
   const { user } = useAuth();
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -186,7 +192,13 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
   useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
-      cleanupRef.current();
+      const rec = recorderRef.current;
+      if (rec && rec.state === "recording") {
+        // Room closed while recording: stop so onstop saves it
+        rec.stop();
+      } else {
+        cleanupRef.current();
+      }
     };
   }, []);
 
@@ -209,7 +221,7 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
         ctx.createMediaStreamSource(new MediaStream([mt])).connect(dest);
       };
 
-      // Host voice
+      // Host voice (if the mic is already on)
       const localPub = lk.localParticipant.getTrackPublication(
         Track.Source.Microphone
       );
@@ -228,8 +240,17 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
       };
       lk.on(RoomEvent.TrackSubscribed, onSub);
 
+      // Host turns the mic on after recording has started
+      const onLocalPub = (pub: any) => {
+        if (pub?.source === Track.Source.Microphone) {
+          addTrack(pub.track?.mediaStreamTrack);
+        }
+      };
+      lk.on(RoomEvent.LocalTrackPublished, onLocalPub);
+
       cleanupRef.current = () => {
         lk.off(RoomEvent.TrackSubscribed, onSub);
+        lk.off(RoomEvent.LocalTrackPublished, onLocalPub);
         ctx.close().catch(() => {});
       };
 
@@ -285,7 +306,7 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
 
       const { error: dbErr } = await supabase.from("radio_recordings").insert({
         host_id: user.id,
-        title: "Radio " + new Date().toLocaleString(),
+        title: label + " " + new Date().toLocaleString(),
         file_url: pub.publicUrl,
         duration: secondsRef.current,
       });
@@ -318,4 +339,4 @@ export default function RadioRecorder({ lk }: { lk: Room | null }) {
       {msg && <p>{msg}</p>}
     </div>
   );
-                        }
+             }
