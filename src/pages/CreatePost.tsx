@@ -17,6 +17,11 @@ const BG_COLORS = ['#0F9D58', '#1565C0', '#C2185B', '#6A1B9A', '#EF6C00'];
 
 export default function CreatePost() {
   const t = useT();
+  // Falls back to English text if a translation key is missing
+  const tr = (key: string, fallback: string) => {
+    const value = t(key);
+    return !value || value === key ? fallback : value;
+  };
   const { user } = useAuth();
   const { dataSaver, isOffline } = useSettings();
   const navigate = useNavigate();
@@ -47,9 +52,9 @@ export default function CreatePost() {
   };
 
   const statusText = (s: VideoStatus) => {
-    if (s.step === 'compressing') return t('compressing_video');
-    if (s.step === 'uploading') return t('uploading_video');
-    return `${t('retrying_upload')} (${s.attempt}/${s.total})`;
+    if (s.step === 'compressing') return tr('compressing_video', 'Compressing video…');
+    if (s.step === 'uploading') return tr('uploading_video', 'Uploading video…');
+    return `${tr('retrying_upload', 'Retrying upload')} (${s.attempt}/${s.total})`;
   };
 
   const handleSubmit = async () => {
@@ -81,10 +86,10 @@ export default function CreatePost() {
           // Step 1: create the thumbnail first (from the original file, fast)
           let thumbnailPath: string | undefined;
           try {
-            setProgress(`${prefix}${t('creating_thumbnail')}`);
+            setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
             const [thumbFile] = await Promise.all([
               generateVideoThumbnail(m.file),
-              new Promise((r) => setTimeout(r, 600)),
+              new Promise((r) => setTimeout(r, 1200)),
             ]);
             const { path: thumbPath } = await uploadImage({
               file: thumbFile,
@@ -100,7 +105,7 @@ export default function CreatePost() {
           }
 
           // Step 2: compress, then upload the video
-          let currentStatus = t('preparing_video');
+          let currentStatus = tr('preparing_video', 'Preparing video…');
           setProgress(`${prefix}${currentStatus}`);
 
           const { path } = await uploadVideo({
@@ -232,12 +237,6 @@ export default function CreatePost() {
         </select>
       </div>
 
-      {uploading && progress && (
-        <p className="mt-4 rounded-lg bg-gray-100 p-3 text-center text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-          {progress}
-        </p>
-      )}
-
       <button
         onClick={handleSubmit}
         disabled={uploading}
@@ -245,6 +244,18 @@ export default function CreatePost() {
       >
         {uploading ? t('please_wait') : t('post')}
       </button>
+
+      {/* Full-screen progress card so the status is always visible, even on small phones */}
+      {uploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-gray-900">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-green-600" />
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              {progress || t('please_wait')}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
-                       }
+    }
