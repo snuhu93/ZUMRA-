@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
 import VoiceRecorderButton from '@/components/VoiceRecorderButton';
 import VoiceMessageBubble from '@/components/VoiceMessageBubble';
-import { useT } from '@/i18n';
+import { useLang } from '@/i18n';
+import { useChatT } from '@/lib/chatStrings';
 import {
   fetchMessages,
   sendMessage,
@@ -28,7 +29,8 @@ interface Msg {
 }
 
 export default function Conversation() {
-  const t = useT();
+  const t = useChatT();
+  const myLanguage = useLang(); // harshen app na yanzu (en, ha, ig, yo, fr, ar)
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const { isOffline } = useSettings();
@@ -37,7 +39,6 @@ export default function Conversation() {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [loading, setLoading] = useState(true);
-  const [myLanguage, setMyLanguage] = useState('ha');
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -62,20 +63,6 @@ export default function Conversation() {
     });
     return unsubscribe;
   }, [conversationId, user]);
-
-  // Harshen da mai amfani ya zaɓa (don fassarar saƙon murya)
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('profiles')
-      .select('preferred_language')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const lang = (data as { preferred_language?: string } | null)?.preferred_language;
-        if (lang) setMyLanguage(lang);
-      });
-  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -183,13 +170,11 @@ export default function Conversation() {
             className="min-w-0 flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
           />
           {conversationId && !isOffline && (
-            <div className="flex-shrink-0">
-              <VoiceRecorderButton conversationId={conversationId} onSent={refreshMessages} />
-            </div>
+            <VoiceRecorderButton conversationId={conversationId} onSent={refreshMessages} />
           )}
           <button onClick={handleSend} className="flex-shrink-0 rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('chat.send')}</button>
         </div>
       </div>
     </div>
   );
-                  }
+          }
