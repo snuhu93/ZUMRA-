@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useChatT } from '@/lib/chatStrings';
 
 type Props = {
   messageId: string;
@@ -8,56 +9,13 @@ type Props = {
   isMine: boolean;
 };
 
-// Kalmomi kaɗan a harsunan 6 (daga baya za a iya mayar da su cikin i18n)
-const TEXTS: Record<
-  string,
-  { translate: string; translating: string; original: string; error: string }
-> = {
-  en: {
-    translate: 'Translate',
-    translating: 'Translating...',
-    original: 'Original text',
-    error: 'Translation failed, try again',
-  },
-  ha: {
-    translate: 'Fassara',
-    translating: 'Ana fassarawa...',
-    original: 'Rubutun asali',
-    error: 'Fassarar ta gaza, a sake gwadawa',
-  },
-  ig: {
-    translate: 'Sụgharịa',
-    translating: 'Na-asụgharị...',
-    original: 'Ederede mbụ',
-    error: 'Nsụgharị adaghị, nwaa ọzọ',
-  },
-  yo: {
-    translate: 'Túmọ̀',
-    translating: 'Ń túmọ̀...',
-    original: 'Ọ̀rọ̀ àtilẹ̀wá',
-    error: 'Ìtumọ̀ kùnà, tún gbìyànjú',
-  },
-  fr: {
-    translate: 'Traduire',
-    translating: 'Traduction...',
-    original: 'Texte original',
-    error: 'Échec de la traduction, réessayez',
-  },
-  ar: {
-    translate: 'ترجمة',
-    translating: 'جارٍ الترجمة...',
-    original: 'النص الأصلي',
-    error: 'فشلت الترجمة، حاول مرة أخرى',
-  },
-};
-
 export default function VoiceMessageBubble({
   messageId,
   audioPath,
   myLanguage,
-  isMine,
+  isMine
 }: Props) {
-  const txt = TEXTS[myLanguage] ?? TEXTS.en;
+  const t = useChatT();
 
   const [audioUrl, setAudioUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,6 +35,13 @@ export default function VoiceMessageBubble({
       active = false;
     };
   }, [audioPath]);
+
+  // Idan mai amfani ya canja harshen app, a share fassarar da ta gabata
+  useEffect(() => {
+    setTranslation('');
+    setTranscript('');
+    setError(false);
+  }, [myLanguage]);
 
   const translate = async () => {
     setLoading(true);
@@ -112,18 +77,18 @@ export default function VoiceMessageBubble({
           disabled={loading}
           className="mt-2 rounded-full border border-current px-3 py-1 text-xs font-semibold opacity-80"
         >
-          {loading ? txt.translating : `🌐 ${txt.translate}`}
+          {loading ? t('voice.translating') : `🌐 ${t('voice.translate')}`}
         </button>
       )}
 
-      {error && <p className="mt-1 text-xs text-red-500">{txt.error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{t('voice.translateError')}</p>}
 
       {translation && (
         <div className="mt-2">
           <p className="text-sm font-semibold">{translation}</p>
           {transcript && (
             <details className="mt-1 text-xs opacity-80">
-              <summary>{txt.original}</summary>
+              <summary>{t('voice.original')}</summary>
               <p className="mt-1">{transcript}</p>
             </details>
           )}
@@ -131,4 +96,4 @@ export default function VoiceMessageBubble({
       )}
     </div>
   );
-  }
+      }
