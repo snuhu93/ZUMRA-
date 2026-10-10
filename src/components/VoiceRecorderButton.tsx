@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useChatT } from '@/lib/chatStrings';
 
 type Props = {
   conversationId: string;
@@ -20,10 +21,10 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
     }
   };
 
-  writeStr(0, "RIFF");
+  writeStr(0, 'RIFF');
   view.setUint32(4, 36 + samples.length * 2, true);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true); // PCM
   view.setUint16(22, 1, true); // mono
@@ -31,7 +32,7 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   view.setUint32(28, sampleRate * 2, true);
   view.setUint16(32, 2, true);
   view.setUint16(34, 16, true);
-  writeStr(36, "data");
+  writeStr(36, 'data');
   view.setUint32(40, samples.length * 2, true);
 
   let offset = 44;
@@ -40,14 +41,13 @@ function encodeWav(samples: Float32Array, sampleRate: number): Blob {
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 
-  return new Blob([buffer], { type: "audio/wav" });
+  return new Blob([buffer], { type: 'audio/wav' });
 }
 
 // Mayar da naɗin wayar (webm/mp4/ogg) zuwa WAV mai 16kHz
 async function blobToWav(blob: Blob): Promise<Blob> {
   const arrayBuffer = await blob.arrayBuffer();
-  const AudioCtx =
-    window.AudioContext || (window as any).webkitAudioContext;
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
   const ctx = new AudioCtx();
   const decoded = await ctx.decodeAudioData(arrayBuffer);
   await ctx.close();
@@ -64,10 +64,11 @@ async function blobToWav(blob: Blob): Promise<Blob> {
 }
 
 export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
+  const t = useChatT();
   const [recording, setRecording] = useState(false);
   const [sending, setSending] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -84,7 +85,7 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
   useEffect(() => {
     return () => {
       clearTimer();
-      if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
         cancelledRef.current = true;
         recorderRef.current.stop();
       }
@@ -93,26 +94,26 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
 
   const sendVoice = async (rawBlob: Blob) => {
     setSending(true);
-    setError("");
-    let uploadedPath = "";
+    setError('');
+    let uploadedPath = '';
     try {
       const wav = await blobToWav(rawBlob);
 
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
-      if (!user) throw new Error("Ba ka shiga ba");
+      if (!user) throw new Error('Not signed in');
 
       uploadedPath = `${user.id}/${crypto.randomUUID()}.wav`;
       const { error: upErr } = await supabase.storage
-        .from("voice-messages")
-        .upload(uploadedPath, wav, { contentType: "audio/wav" });
+        .from('voice-messages')
+        .upload(uploadedPath, wav, { contentType: 'audio/wav' });
       if (upErr) throw upErr;
 
-      const { error: insErr } = await supabase.from("messages").insert({
+      const { error: insErr } = await supabase.from('messages').insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: "",
-        audio_path: uploadedPath,
+        content: '',
+        audio_path: uploadedPath
       });
       if (insErr) throw insErr;
 
@@ -121,16 +122,16 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
       console.error(e);
       // Idan saka saƙo ya gaza, a goge muryar da aka loda
       if (uploadedPath) {
-        await supabase.storage.from("voice-messages").remove([uploadedPath]);
+        await supabase.storage.from('voice-messages').remove([uploadedPath]);
       }
-      setError("Ba a iya aika murya ba, a sake gwadawa.");
+      setError(t('voice.sendFailed'));
     } finally {
       setSending(false);
     }
   };
 
   const startRecording = async () => {
-    setError("");
+    setError('');
     cancelledRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -142,12 +143,12 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
       };
 
       recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
+        stream.getTracks().forEach((track) => track.stop());
         clearTimer();
         setRecording(false);
         if (cancelledRef.current) return;
         const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || "audio/webm",
+          type: recorder.mimeType || 'audio/webm'
         });
         if (blob.size === 0) return;
         await sendVoice(blob);
@@ -167,7 +168,7 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
         });
       }, 1000);
     } catch {
-      setError("Ba a sami izinin makirufo ba.");
+      setError(t('voice.micDenied'));
     }
   };
 
@@ -181,34 +182,45 @@ export default function VoiceRecorderButton({ conversationId, onSent }: Props) {
   };
 
   const fmt = (s: number) =>
-    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+    <div className="inline-flex flex-shrink-0 items-center gap-2">
       {!recording && (
         <button
           type="button"
           onClick={startRecording}
           disabled={sending}
-          aria-label="Naɗa murya"
+          aria-label={t('voice.record')}
+          className="flex-shrink-0 px-1 text-lg"
         >
-          {sending ? "Ana aikawa..." : "🎤"}
+          {sending ? t('voice.sending') : '🎤'}
         </button>
       )}
 
       {recording && (
         <>
-          <span style={{ color: "red" }}>● {fmt(seconds)}</span>
-          <button type="button" onClick={cancelRecording} aria-label="Soke">
+          <span className="whitespace-nowrap text-xs text-red-500">● {fmt(seconds)}</span>
+          <button
+            type="button"
+            onClick={cancelRecording}
+            aria-label={t('voice.cancel')}
+            className="flex-shrink-0 px-1"
+          >
             ✖
           </button>
-          <button type="button" onClick={stopAndSend} aria-label="Aika">
+          <button
+            type="button"
+            onClick={stopAndSend}
+            aria-label={t('voice.send')}
+            className="flex-shrink-0 px-1"
+          >
             ➤
           </button>
         </>
       )}
 
-      {error && <span style={{ color: "red", fontSize: 12 }}>{error}</span>}
+      {error && <span className="text-xs text-red-500">{error}</span>}
     </div>
   );
-  }
+    }
