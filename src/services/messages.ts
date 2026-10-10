@@ -3,7 +3,12 @@ import { supabase } from '@/lib/supabaseClient';
 export interface ConversationSummary {
   id: string;
   other: { id: string; username: string; full_name: string; avatar_url: string | null } | null;
-  lastMessage: { content: string | null; created_at: string; sender_id: string } | null;
+  lastMessage: {
+    content: string | null;
+    audio_path?: string | null;
+    created_at: string;
+    sender_id: string;
+  } | null;
   unread: boolean;
 }
 
@@ -31,11 +36,14 @@ export async function fetchConversations(userId: string): Promise<ConversationSu
 
   const { data: lastMessages } = await supabase
     .from('messages')
-    .select('conversation_id, content, created_at, sender_id')
+    .select('conversation_id, content, audio_path, created_at, sender_id')
     .in('conversation_id', convIds)
     .order('created_at', { ascending: false });
 
-  const lastByConv = new Map<string, { content: string | null; created_at: string; sender_id: string }>();
+  const lastByConv = new Map<
+    string,
+    { content: string | null; audio_path?: string | null; created_at: string; sender_id: string }
+  >();
   (lastMessages ?? []).forEach((m) => {
     if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
   });
@@ -56,7 +64,7 @@ export async function fetchConversations(userId: string): Promise<ConversationSu
 export async function fetchMessages(conversationId: string, cursor: string | null) {
   let query = supabase
     .from('messages')
-    .select('id, conversation_id, sender_id, content, reply_to_message_id, is_deleted, created_at')
+    .select('id, conversation_id, sender_id, content, audio_path, reply_to_message_id, is_deleted, created_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(30);
@@ -122,4 +130,4 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
   return () => {
     supabase.removeChannel(channel);
   };
-    }
+}
