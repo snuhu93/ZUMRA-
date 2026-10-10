@@ -180,14 +180,16 @@ export default function Conversation() {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={t('chat.messagePlaceholder')}
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+            className="min-w-0 flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
           />
           {conversationId && !isOffline && (
-            <VoiceRecorderButton conversationId={conversationId} onSent={refreshMessages} />
+            <div className="flex-shrink-0">
+              <VoiceRecorderButton conversationId={conversationId} onSent={refreshMessages} />
+            </div>
           )}
-          <button onClick={handleSend} className="rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('chat.send')}</button>
+          <button onClick={handleSend} className="flex-shrink-0 rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('chat.send')}</button>
         </div>
       </div>
     </div>
   );
-      }
+                  }
