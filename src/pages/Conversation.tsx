@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
+import VoiceRecorderButton from '@/components/VoiceRecorderButton';
+import VoiceMessageBubble from '@/components/VoiceMessageBubble';
 import { useT } from '@/i18n';
 import {
   fetchMessages,
@@ -21,6 +23,7 @@ interface Msg {
   reply_to_message_id: string | null;
   is_deleted: boolean;
   created_at: string;
+  audio_path?: string | null;
   _pending?: boolean;
 }
 
@@ -34,6 +37,7 @@ export default function Conversation() {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myLanguage, setMyLanguage] = useState('ha');
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -59,9 +63,31 @@ export default function Conversation() {
     return unsubscribe;
   }, [conversationId, user]);
 
+  // Harshen da mai amfani ya zaɓa (don fassarar saƙon murya)
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('preferred_language')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const lang = (data as { preferred_language?: string } | null)?.preferred_language;
+        if (lang) setMyLanguage(lang);
+      });
+  }, [user]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Sake ɗaukar saƙonni bayan an aika murya (a bar saƙonnin da ke jira)
+  const refreshMessages = () => {
+    if (!conversationId) return;
+    fetchMessages(conversationId, null).then((data) => {
+      setMessages((prev) => [...(data as Msg[]), ...prev.filter((m) => m._pending)]);
+    });
+  };
 
   const handleSend = async () => {
     if (!user || !conversationId || !text.trim()) return;
@@ -115,7 +141,16 @@ export default function Conversation() {
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-zumra-500 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>
                 {m.reply_to_message_id && <p className="mb-1 text-xs opacity-70">{t('chat.replyingToMessage')}</p>}
-                <p>{m.content}</p>
+                {m.audio_path ? (
+                  <VoiceMessageBubble
+                    messageId={m.id}
+                    audioPath={m.audio_path}
+                    myLanguage={myLanguage}
+                    isMine={mine}
+                  />
+                ) : (
+                  <p>{m.content}</p>
+                )}
                 <div className="mt-1 flex items-center gap-2 text-[10px] opacity-70">
                   <span>{m._pending ? (isOffline ? t('waiting_for_connection') : t('sending')) : new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   {mine && !m._pending && (
@@ -135,7 +170,7 @@ export default function Conversation() {
       <div className="border-t border-gray-200 p-3 dark:border-gray-800">
         {replyTo && (
           <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
-            <span>{t('chat.replyingTo')} {replyTo.content?.slice(0, 40)}</span>
+            <span>{t('chat.replyingTo')} {replyTo.audio_path ? '🎤' : replyTo.content?.slice(0, 40)}</span>
             <button onClick={() => setReplyTo(null)}>✕</button>
           </div>
         )}
@@ -147,9 +182,12 @@ export default function Conversation() {
             placeholder={t('chat.messagePlaceholder')}
             className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
           />
+          {conversationId && !isOffline && (
+            <VoiceRecorderButton conversationId={conversationId} onSent={refreshMessages} />
+          )}
           <button onClick={handleSend} className="rounded-full bg-zumra-500 px-4 py-2 text-sm font-semibold text-white">{t('chat.send')}</button>
         </div>
       </div>
     </div>
   );
-}
+      }
