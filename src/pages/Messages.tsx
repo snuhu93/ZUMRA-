@@ -56,7 +56,9 @@ export default function Messages() {
             <Avatar src={c.other?.avatar_url} name={c.other?.full_name ?? 'User'} size={48} />
             <div className="flex-1 overflow-hidden">
               <p className={`text-sm ${c.unread ? 'font-semibold' : 'font-medium'}`}>{c.other?.full_name ?? t('unknown_user')}</p>
-              <p className="truncate text-xs text-gray-500">{c.lastMessage?.content ?? t('say_hello')}</p>
+              <p className="truncate text-xs text-gray-500">
+                {c.lastMessage?.audio_path ? '🎤' : (c.lastMessage?.content ?? t('say_hello'))}
+              </p>
             </div>
             {c.lastMessage && <span className="text-xs text-gray-400">{timeAgo(c.lastMessage.created_at)}</span>}
             {c.unread && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-zumra-500" />}
@@ -65,4 +67,4 @@ export default function Messages() {
       </div>
     </div>
   );
-            }
+}
