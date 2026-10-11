@@ -1,427 +1,237 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../lib/supabase"; // canza hanyar idan ta bambanta
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchScheduledPosts, cancelScheduledPost, type FeedPost } from '@/services/posts';
+import { getPublicUrl, deleteFile } from '@/services/storage';
+import { useLang, useT, type Lang } from '@/i18n';
 
-type ScheduledPost = {
-  id: string;
-  content: string;
-  scheduled_at: string;
-  media_urls: string[];
-  media_type: "image" | "video" | null;
+// Texts for this page live here, so the big i18n file does not need to change
+const TEXT: Record<
+  Lang,
+  {
+    title: string;
+    empty: string;
+    create: string;
+    cancel: string;
+    confirm: string;
+    cancelling: string;
+    publishesOn: string;
+    mediaOnly: string;
+    loadError: string;
+  }
+> = {
+  en: {
+    title: 'Scheduled posts',
+    empty: 'You have no scheduled posts.',
+    create: 'Schedule a post',
+    cancel: 'Cancel post',
+    confirm: 'Cancel this scheduled post? It will not be published.',
+    cancelling: 'Cancelling...',
+    publishesOn: 'Publishes on',
+    mediaOnly: 'Photo/video only',
+    loadError: 'Could not load your scheduled posts.'
+  },
+  ha: {
+    title: 'Wallafoyin da aka tsara',
+    empty: 'Ba ka da wallafar da aka tsara.',
+    create: 'Tsara wallafa',
+    cancel: 'Soke wallafa',
+    confirm: 'A soke wannan wallafar da aka tsara? Ba za a wallafa ta ba.',
+    cancelling: 'Ana sokewa...',
+    publishesOn: 'Za a wallafa a',
+    mediaOnly: 'Hoto/bidiyo kawai',
+    loadError: 'An kasa loda wallafoyinka da aka tsara.'
+  },
+  fr: {
+    title: 'Publications programmées',
+    empty: "Vous n'avez aucune publication programmée.",
+    create: 'Programmer une publication',
+    cancel: 'Annuler la publication',
+    confirm: 'Annuler cette publication programmée ? Elle ne sera pas publiée.',
+    cancelling: 'Annulation...',
+    publishesOn: 'Publication le',
+    mediaOnly: 'Photo/vidéo uniquement',
+    loadError: 'Impossible de charger vos publications programmées.'
+  },
+  ar: {
+    title: 'المنشورات المجدولة',
+    empty: 'ليس لديك منشورات مجدولة.',
+    create: 'جدولة منشور',
+    cancel: 'إلغاء المنشور',
+    confirm: 'إلغاء هذا المنشور المجدول؟ لن يتم نشره.',
+    cancelling: 'جارٍ الإلغاء...',
+    publishesOn: 'سيُنشر في',
+    mediaOnly: 'صورة/فيديو فقط',
+    loadError: 'تعذّر تحميل منشوراتك المجدولة.'
+  },
+  yo: {
+    title: 'Àwọn ìfìwéránṣẹ́ tí a ṣètò',
+    empty: 'O kò ní ìfìwéránṣẹ́ tí a ṣètò.',
+    create: 'Ṣètò ìfìwéránṣẹ́',
+    cancel: 'Fagilé ìfìwéránṣẹ́',
+    confirm: 'Fagilé ìfìwéránṣẹ́ tí a ṣètò yìí? A kò ní tẹ̀ ẹ́ jáde.',
+    cancelling: 'Ń fagilé...',
+    publishesOn: 'A ó tẹ̀ ẹ́ jáde ní',
+    mediaOnly: 'Fọ́tò/fídíò nìkan',
+    loadError: 'A kò lè gbé àwọn ìfìwéránṣẹ́ tí o ṣètò wá.'
+  },
+  ig: {
+    title: 'Ederede ndị e hazịrị',
+    empty: 'Ọ nweghị ederede e hazịrị.',
+    create: 'Hazie ederede',
+    cancel: 'Kagbuo ederede',
+    confirm: 'Kagbuo ederede e hazịrị a? A gaghị ebipụta ya.',
+    cancelling: 'Na-akagbu...',
+    publishesOn: 'A ga-ebipụta ya na',
+    mediaOnly: 'Foto/vidiyo naanị',
+    loadError: 'Enweghị ike ibu ederede gị e hazịrị.'
+  }
 };
 
-const BUCKET = "post-media";
-const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
-const MAX_IMAGES = 6;
+export default function ScheduledPosts() {
+  const t = useT();
+  const lang = useLang();
+  const text = TEXT[lang] ?? TEXT.en;
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-const t = {
-  title: "Tsara lokacin post",
-  placeholder: "Rubuta post ɗinka a nan...",
-  addMedia: "Ƙara hoto ko bidiyo",
-  removeMedia: "Cire",
-  mediaHint: "Hotuna har guda 6, ko bidiyo guda ɗaya (har 50 MB).",
-  date: "Kwanan wata",
-  time: "Lokaci",
-  schedule: "Tsara post",
-  scheduling: "Ana tsarawa...",
-  uploading: "Ana loda fayiloli...",
-  listTitle: "Posts ɗin da aka tsara",
-  empty: "Babu post da aka tsara tukuna.",
-  cancel: "Soke",
-  successMsg: "An tsara post ɗin cikin nasara!",
-  cancelledMsg: "An soke post ɗin.",
-  errEmpty: "Rubuta wani abu ko ka ƙara hoto/bidiyo.",
-  errPast: "Lokaci dole ne ya zama nan gaba.",
-  errLogin: "Ka shiga (login) tukuna.",
-  errGeneric: "Wani abu ya faru. Sake gwadawa.",
-  errTooBig: "Fayil ɗin ya wuce 50 MB.",
-  errType: "Ana iya ɗaukar hoto ko bidiyo kawai.",
-  errMix: "Ba za a haɗa hoto da bidiyo a post ɗaya ba.",
-  errOneVideo: "Bidiyo ɗaya kawai ake iya ƙarawa.",
-  errMaxImages: "Hotuna har guda 6 kawai.",
-  scheduledFor: "Za a wallafa:",
-};
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-// Daga cikakken URL, a fitar da hanyar fayil a cikin bucket
-const pathFromUrl = (url: string): string | null => {
-  const marker = `/${BUCKET}/`;
-  const i = url.indexOf(marker);
-  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length));
-};
-
-export default function SchedulePost() {
-  const [content, setContent] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [posts, setPosts] = useState<ScheduledPost[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Samfurin kallo (preview) na fayilolin da aka zaɓa
-  const previews = useMemo(
-    () =>
-      files.map((f) => ({
-        url: URL.createObjectURL(f),
-        isVideo: f.type.startsWith("video/"),
-      })),
-    [files]
-  );
-
-  useEffect(() => {
-    return () => previews.forEach((p) => URL.revokeObjectURL(p.url));
-  }, [previews]);
-
-  const loadScheduled = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData.user;
+  const load = useCallback(async () => {
     if (!user) return;
-
-    const { data, error: fetchError } = await supabase
-      .from("posts")
-      .select("id, content, scheduled_at, media_urls, media_type")
-      .eq("user_id", user.id)
-      .eq("status", "scheduled")
-      .order("scheduled_at", { ascending: true });
-
-    if (!fetchError && data) setPosts(data as ScheduledPost[]);
-  };
-
-  useEffect(() => {
-    loadScheduled();
-  }, []);
-
-  const handleFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    const picked = Array.from(e.target.files ?? []);
-    e.target.value = ""; // don a iya zaɓar fayil iri ɗaya kuma
-    if (picked.length === 0) return;
-
-    for (const f of picked) {
-      const isImage = f.type.startsWith("image/");
-      const isVideo = f.type.startsWith("video/");
-      if (!isImage && !isVideo) {
-        setError(t.errType);
-        return;
-      }
-      if (f.size > MAX_SIZE) {
-        setError(t.errTooBig);
-        return;
-      }
-    }
-
-    const combined = [...files, ...picked];
-    const hasVideo = combined.some((f) => f.type.startsWith("video/"));
-    const hasImage = combined.some((f) => f.type.startsWith("image/"));
-
-    if (hasVideo && hasImage) {
-      setError(t.errMix);
-      return;
-    }
-    if (hasVideo && combined.length > 1) {
-      setError(t.errOneVideo);
-      return;
-    }
-    if (hasImage && combined.length > MAX_IMAGES) {
-      setError(t.errMaxImages);
-      return;
-    }
-
-    setFiles(combined);
-  };
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSchedule = async () => {
-    setError(null);
-    setMessage(null);
-
-    if (!content.trim() && files.length === 0) {
-      setError(t.errEmpty);
-      return;
-    }
-
-    const when = new Date(`${date}T${time}`);
-    if (!date || !time || isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-      setError(t.errPast);
-      return;
-    }
-
     setLoading(true);
-    const uploadedPaths: string[] = [];
-
+    setLoadFailed(false);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (!user) {
-        setError(t.errLogin);
-        return;
-      }
-
-      // 1) Loda fayiloli
-      const mediaUrls: string[] = [];
-      for (const file of files) {
-        const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-        const path = `${user.id}/${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}.${ext}`;
-
-        const { error: upError } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, file, { contentType: file.type, upsert: false });
-
-        if (upError) throw upError;
-        uploadedPaths.push(path);
-
-        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        mediaUrls.push(pub.publicUrl);
-      }
-
-      const mediaType: "image" | "video" | null =
-        files.length === 0
-          ? null
-          : files[0].type.startsWith("video/")
-          ? "video"
-          : "image";
-
-      // 2) Adana post ɗin
-      const { error: insertError } = await supabase.from("posts").insert({
-        user_id: user.id,
-        content: content.trim(),
-        status: "scheduled",
-        scheduled_at: when.toISOString(),
-        media_urls: mediaUrls,
-        media_type: mediaType,
-      });
-
-      if (insertError) throw insertError;
-
-      setContent("");
-      setDate("");
-      setTime("");
-      setFiles([]);
-      setMessage(t.successMsg);
-      await loadScheduled();
+      const data = await fetchScheduledPosts(user.id);
+      setPosts(data);
     } catch (e) {
-      // Idan an sami kuskure, a share fayilolin da aka riga aka loda
-      if (uploadedPaths.length > 0) {
-        await supabase.storage.from(BUCKET).remove(uploadedPaths);
-      }
-      setError(t.errGeneric);
+      console.error('Load scheduled posts failed', e);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleCancel = async (post: ScheduledPost) => {
-    setError(null);
-    setMessage(null);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-    const { error: deleteError } = await supabase
-      .from("posts")
-      .delete()
-      .eq("id", post.id)
-      .eq("status", "scheduled");
+  const handleCancel = async (post: FeedPost) => {
+    if (!window.confirm(text.confirm)) return;
+    setActionError(null);
+    setCancellingId(post.id);
+    try {
+      await cancelScheduledPost(post.id);
+      setPosts((prev) => prev.filter((p) => p.id !== post.id));
 
-    if (deleteError) {
-      setError(t.errGeneric);
-      return;
+      // Best-effort cleanup: remove the uploaded files so they do not waste storage
+      for (const m of post.post_media ?? []) {
+        try {
+          await deleteFile(m.media_type === 'video' ? 'post-videos' : 'post-images', m.storage_path);
+          if (m.thumbnail_path) await deleteFile('post-images', m.thumbnail_path);
+        } catch (e) {
+          console.error('Could not delete file', e);
+        }
+      }
+    } catch (e) {
+      console.error('Cancel scheduled post failed', e);
+      setActionError(t('something_went_wrong'));
+    } finally {
+      setCancellingId(null);
     }
-
-    // A share media ɗin daga storage
-    const paths = (post.media_urls ?? [])
-      .map(pathFromUrl)
-      .filter((p): p is string => !!p);
-    if (paths.length > 0) {
-      await supabase.storage.from(BUCKET).remove(paths);
-    }
-
-    setMessage(t.cancelledMsg);
-    setPosts((prev) => prev.filter((p) => p.id !== post.id));
   };
 
   return (
-    <div style={{ maxWidth: 520, margin: "0 auto", padding: 16 }}>
-      <h2>{t.title}</h2>
+    <div className="p-4">
+      <h1 className="mb-4 text-lg font-bold">{text.title}</h1>
 
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={t.placeholder}
-        rows={5}
-        style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-      />
+      {actionError && (
+        <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {actionError}
+        </p>
+      )}
 
-      {/* Zaɓar hoto/bidiyo */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,video/*"
-        multiple
-        onChange={handleFilesPicked}
-        style={{ display: "none" }}
-      />
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={loading}
-        style={{ marginTop: 8, padding: "8px 12px" }}
-      >
-        📎 {t.addMedia}
-      </button>
-      <div>
-        <small>{t.mediaHint}</small>
-      </div>
+      {loading && (
+        <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">{t('loading')}</div>
+      )}
 
-      {previews.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            marginTop: 8,
-          }}
-        >
-          {previews.map((p, i) => (
-            <div key={p.url} style={{ position: "relative" }}>
-              {p.isVideo ? (
-                <video
-                  src={p.url}
-                  controls
-                  style={{ width: 160, height: 120, objectFit: "cover", borderRadius: 8 }}
-                />
-              ) : (
-                <img
-                  src={p.url}
-                  alt=""
-                  style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 8 }}
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => removeFile(i)}
-                disabled={loading}
-                aria-label={t.removeMedia}
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  right: 4,
-                  borderRadius: "50%",
-                  border: "none",
-                  width: 24,
-                  height: 24,
-                  cursor: "pointer",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+      {!loading && loadFailed && (
+        <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          {text.loadError}
+          <button onClick={load} className="mt-2 block w-full font-semibold text-zumra-600">
+            {t('try_again')}
+          </button>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <label style={{ flex: 1 }}>
-          {t.date}
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ width: "100%", boxSizing: "border-box" }}
-          />
-        </label>
-        <label style={{ flex: 1 }}>
-          {t.time}
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            style={{ width: "100%", boxSizing: "border-box" }}
-          />
-        </label>
-      </div>
+      {!loading && !loadFailed && posts.length === 0 && (
+        <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="mb-2 text-4xl">🗓️</div>
+          <p>{text.empty}</p>
+          <button onClick={() => navigate('/create')} className="mt-3 block w-full font-semibold text-zumra-600">
+            {text.create}
+          </button>
+        </div>
+      )}
 
-      <button
-        onClick={handleSchedule}
-        disabled={loading}
-        style={{ marginTop: 12, width: "100%", padding: 10 }}
-      >
-        {loading
-          ? files.length > 0
-            ? t.uploading
-            : t.scheduling
-          : t.schedule}
-      </button>
-
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      <h3 style={{ marginTop: 24 }}>{t.listTitle}</h3>
-      {posts.length === 0 ? (
-        <p>{t.empty}</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {posts.map((p) => (
-            <li
-              key={p.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                padding: 10,
-                marginBottom: 8,
-              }}
+      {!loading &&
+        !loadFailed &&
+        posts.map((post) => {
+          const media = (post.post_media ?? []).slice().sort((a, b) => a.position - b.position);
+          return (
+            <div
+              key={post.id}
+              className="mb-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
             >
-              {p.content && <div>{p.content}</div>}
+              <p className="mb-2 text-xs font-semibold text-zumra-600">
+                🗓️ {text.publishesOn}{' '}
+                {post.scheduled_at ? new Date(post.scheduled_at).toLocaleString() : ''}
+              </p>
 
-              {p.media_urls?.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 6,
-                    margin: "6px 0",
-                  }}
-                >
-                  {p.media_type === "video" ? (
-                    <video
-                      src={p.media_urls[0]}
-                      controls
-                      style={{ width: 200, borderRadius: 8 }}
-                    />
-                  ) : (
-                    p.media_urls.map((u) => (
-                      <img
-                        key={u}
-                        src={u}
-                        alt=""
-                        style={{
-                          width: 80,
-                          height: 80,
-                          objectFit: "cover",
-                          borderRadius: 8,
-                        }}
-                      />
-                    ))
-                  )}
+              {post.content ? (
+                <p className="selectable whitespace-pre-wrap break-words text-sm">{post.content}</p>
+              ) : (
+                media.length > 0 && <p className="text-sm italic text-gray-500">{text.mediaOnly}</p>
+              )}
+
+              {media.length > 0 && (
+                <div className="mt-2 flex gap-2 overflow-x-auto">
+                  {media.map((m) => {
+                    const src =
+                      m.media_type === 'image'
+                        ? getPublicUrl('post-images', m.storage_path)
+                        : m.thumbnail_path
+                        ? getPublicUrl('post-images', m.thumbnail_path)
+                        : null;
+                    return (
+                      <div
+                        key={m.id}
+                        className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-800"
+                      >
+                        {src && <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                        {m.media_type === 'video' && (
+                          <span className="absolute text-xl">🎬</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              <small>
-                {t.scheduledFor}{" "}
-                {new Date(p.scheduled_at).toLocaleString("ha-NG")}
-              </small>
-              <div>
-                <button onClick={() => handleCancel(p)} style={{ marginTop: 6 }}>
-                  {t.cancel}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              <button
+                onClick={() => handleCancel(post)}
+                disabled={cancellingId === post.id}
+                className="mt-3 w-full rounded-lg border border-red-300 py-2 text-sm font-semibold text-red-600 disabled:opacity-60 dark:border-red-800"
+              >
+                {cancellingId === post.id ? text.cancelling : text.cancel}
+              </button>
+            </div>
+          );
+        })}
     </div>
   );
-}
+      }
