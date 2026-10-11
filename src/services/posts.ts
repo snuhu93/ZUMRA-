@@ -14,6 +14,7 @@ export interface FeedPost {
   comment_count: number;
   share_count: number;
   created_at: string;
+  status?: 'draft' | 'scheduled' | 'published';
   scheduled_at?: string | null;
   author: { id: string; username: string; full_name: string; avatar_url: string | null } | null;
   post_media: { id: string; media_type: 'image' | 'video'; storage_path: string; thumbnail_path: string | null; position: number }[];
@@ -171,7 +172,7 @@ export async function fetchPostById(postId: string, userId: string | null): Prom
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at,
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at, status, scheduled_at,
       author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
@@ -181,6 +182,9 @@ export async function fetchPostById(postId: string, userId: string | null): Prom
   if (error) throw error;
   if (!data) return null;
   const post = data as unknown as FeedPost;
+
+  // A post that is not published yet (scheduled / draft) can only be seen by its author
+  if (post.status && post.status !== 'published' && post.author_id !== userId) return null;
 
   if (userId) {
     const [{ data: like }, { data: save }] = await Promise.all([
@@ -250,6 +254,14 @@ export async function createPost(params: {
   media: { path: string; type: 'image' | 'video'; thumbnailPath?: string | null }[];
 }) {
   const isScheduled = !!params.scheduledAt;
+
+  // A scheduled time must be a valid date in the future
+  if (isScheduled) {
+    const when = new Date(params.scheduledAt as string).getTime();
+    if (Number.isNaN(when) || when <= Date.now()) {
+      throw new Error('Lokacin da aka zaɓa ya riga ya wuce. Zaɓi lokaci na gaba.');
+    }
+  }
 
   const { data: post, error } = await supabase
     .from('posts')
@@ -335,4 +347,4 @@ export async function sharePost(originalPostId: string, userId: string, comment:
     await supabase.from('notifications').insert({ recipient_id: original.author_id, actor_id: userId, type: 'post_share', entity_id: originalPostId });
   }
   return post.id as string;
-  }
+      }
