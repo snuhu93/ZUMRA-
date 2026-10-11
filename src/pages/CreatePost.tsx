@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useT } from '@/i18n';
+import { useLang, useT, type Lang } from '@/i18n';
 import { createPost } from '@/services/posts';
 import {
   uploadImage,
@@ -21,6 +21,16 @@ interface PendingMedia {
 
 const BG_COLORS = ['#0F9D58', '#1565C0', '#C2185B', '#6A1B9A', '#EF6C00'];
 
+// Label for the button that opens the scheduled posts page
+const SCHEDULED_LINK: Record<Lang, string> = {
+  en: 'Scheduled posts',
+  ha: 'Wallafoyin da aka tsara',
+  fr: 'Publications programmées',
+  ar: 'المنشورات المجدولة',
+  yo: 'Àwọn ìfìwéránṣẹ́ tí a ṣètò',
+  ig: 'Ederede ndị e hazịrị'
+};
+
 // Value for <input type="datetime-local"> in the user's local time
 function toLocalInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -29,6 +39,8 @@ function toLocalInputValue(d: Date) {
 
 export default function CreatePost() {
   const t = useT();
+  const lang = useLang();
+  const scheduledLabel = SCHEDULED_LINK[lang] ?? SCHEDULED_LINK.en;
   // Falls back to English text if a translation key is missing
   const tr = (key: string, fallback: string) => {
     const value = t(key);
@@ -201,8 +213,14 @@ export default function CreatePost() {
         </p>
         <p className="mt-1 text-sm font-semibold">{new Date(scheduledDone).toLocaleString()}</p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/scheduled')}
           className="mt-6 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white"
+        >
+          🗓️ {scheduledLabel}
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="mt-3 w-full rounded-lg border border-gray-300 py-3 text-sm font-semibold dark:border-gray-700"
         >
           {tr('schedule_done_home', 'Back to home')}
         </button>
@@ -212,7 +230,17 @@ export default function CreatePost() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-lg font-bold">{t('create_post')}</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-lg font-bold">{t('create_post')}</h1>
+        <button
+          type="button"
+          onClick={() => navigate('/scheduled')}
+          disabled={uploading}
+          className="flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+        >
+          🗓️ {scheduledLabel}
+        </button>
+      </div>
       {error && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">{error}</p>}
 
       {activeColor ? (
@@ -362,4 +390,4 @@ export default function CreatePost() {
       )}
     </div>
   );
-  }
+    }
