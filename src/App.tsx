@@ -15,6 +15,7 @@ const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Home = lazy(() => import('@/pages/Home'));
 const Reels = lazy(() => import('@/pages/Reels'));
 const CreatePost = lazy(() => import('@/pages/CreatePost'));
+const ScheduledPosts = lazy(() => import('@/pages/ScheduledPosts'));
 const EditPost = lazy(() => import('@/pages/EditPost'));
 const PostDetail = lazy(() => import('@/pages/PostDetail'));
 const SharePost = lazy(() => import('@/pages/SharePost'));
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/" element={<Protected><Home /></Protected>} />
                 <Route path="/reels" element={<Protected><Reels /></Protected>} />
                 <Route path="/create" element={<Protected><CreatePost /></Protected>} />
+                <Route path="/scheduled" element={<Protected><ScheduledPosts /></Protected>} />
                 <Route path="/post/:postId" element={<Protected><PostDetail /></Protected>} />
                 <Route path="/post/:postId/edit" element={<Protected><EditPost /></Protected>} />
                 <Route path="/post/:postId/share" element={<Protected><SharePost /></Protected>} />
@@ -140,4 +142,4 @@ export default function App() {
       </AuthProvider>
     </BrowserRouter>
   );
-  }
+}
