@@ -14,6 +14,7 @@ export interface FeedPost {
   comment_count: number;
   share_count: number;
   created_at: string;
+  scheduled_at?: string | null;
   author: { id: string; username: string; full_name: string; avatar_url: string | null } | null;
   post_media: { id: string; media_type: 'image' | 'video'; storage_path: string; thumbnail_path: string | null; position: number }[];
   liked_by_me?: boolean;
@@ -41,6 +42,7 @@ export async function fetchFeed(cursor: string | null, userId: string | null): P
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
     .eq('is_deleted', false)
+    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
 
@@ -94,6 +96,7 @@ export async function fetchLocalFeed(
       post_media(id, media_type, storage_path, thumbnail_path, position)
     `)
     .eq('is_deleted', false)
+    .eq('status', 'published')
     .ilike('state', state);
 
   if (level === 'lga' || level === 'ward' || level === 'neighborhood') query = query.ilike('lga', lga as string);
@@ -135,6 +138,7 @@ export async function fetchVideoFeed(cursor: string | null, userId: string | nul
       post_media!inner(id, media_type, storage_path, thumbnail_path, position)
     `)
     .eq('is_deleted', false)
+    .eq('status', 'published')
     .eq('post_media.media_type', 'video')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
@@ -199,6 +203,7 @@ export async function fetchProfilePosts(authorId: string, cursor: string | null)
     `)
     .eq('author_id', authorId)
     .eq('is_deleted', false)
+    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE);
   if (cursor) query = query.lt('created_at', cursor);
@@ -209,20 +214,52 @@ export async function fetchProfilePosts(authorId: string, cursor: string | null)
   return { posts, nextCursor };
 }
 
+/** The user's own scheduled posts (not yet published), soonest first. */
+export async function fetchScheduledPosts(authorId: string): Promise<FeedPost[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      id, author_id, content, privacy, shared_post_id, background_color, like_count, comment_count, share_count, created_at, scheduled_at,
+      author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url),
+      post_media(id, media_type, storage_path, thumbnail_path, position)
+    `)
+    .eq('author_id', authorId)
+    .eq('is_deleted', false)
+    .eq('status', 'scheduled')
+    .order('scheduled_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as FeedPost[];
+}
+
+/** Cancel a scheduled post (soft delete, same as deletePost, but only while it is still scheduled). */
+export async function cancelScheduledPost(postId: string) {
+  const { error } = await supabase
+    .from('posts')
+    .update({ is_deleted: true })
+    .eq('id', postId)
+    .eq('status', 'scheduled');
+  if (error) throw error;
+}
+
 export async function createPost(params: {
   authorId: string;
   content: string;
   privacy: PrivacyLevel;
   backgroundColor?: string | null;
+  scheduledAt?: string | null; // ISO date-time; if set, the post is saved as scheduled
   media: { path: string; type: 'image' | 'video'; thumbnailPath?: string | null }[];
 }) {
+  const isScheduled = !!params.scheduledAt;
+
   const { data: post, error } = await supabase
     .from('posts')
     .insert({
       author_id: params.authorId,
       content: params.content,
       privacy: params.privacy,
-      background_color: params.backgroundColor ?? null
+      background_color: params.backgroundColor ?? null,
+      status: isScheduled ? 'scheduled' : 'published',
+      scheduled_at: isScheduled ? params.scheduledAt : null
     })
     .select('id')
     .single();
@@ -298,4 +335,4 @@ export async function sharePost(originalPostId: string, userId: string, comment:
     await supabase.from('notifications').insert({ recipient_id: original.author_id, actor_id: userId, type: 'post_share', entity_id: originalPostId });
   }
   return post.id as string;
-}
+  }
