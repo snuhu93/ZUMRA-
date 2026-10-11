@@ -105,7 +105,7 @@ export default function PostDetail() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Write a comment..."
-          className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+          className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
         <button onClick={handleSubmitComment} disabled={submitting} className="text-sm font-semibold text-zumra-600 disabled:opacity-50">
           {submitting ? 'Sending...' : 'Send'}
@@ -113,4 +113,4 @@ export default function PostDetail() {
       </div>
     </div>
   );
-  }
+        }
