@@ -21,6 +21,12 @@ interface PendingMedia {
 
 const BG_COLORS = ['#0F9D58', '#1565C0', '#C2185B', '#6A1B9A', '#EF6C00'];
 
+// Value for <input type="datetime-local"> in the user's local time
+function toLocalInputValue(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function CreatePost() {
   const t = useT();
   // Falls back to English text if a translation key is missing
@@ -38,6 +44,11 @@ export default function CreatePost() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Scheduling
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [scheduledDone, setScheduledDone] = useState<string | null>(null);
 
   // A colored background only applies to text-only posts.
   const activeColor = media.length === 0 ? bgColor : null;
@@ -73,6 +84,22 @@ export default function CreatePost() {
       setError(`${t('you_are_offline')} ${t('waiting_for_connection')}`);
       return;
     }
+
+    // Check the schedule time before uploading anything
+    let scheduledIso: string | null = null;
+    if (scheduleOn) {
+      if (!scheduleAt) {
+        setError(tr('schedule_error_empty', 'Choose the date and time.'));
+        return;
+      }
+      const when = new Date(scheduleAt);
+      if (isNaN(when.getTime()) || when.getTime() < Date.now() + 60_000) {
+        setError(tr('schedule_error_past', 'Choose a time at least 1 minute from now.'));
+        return;
+      }
+      scheduledIso = when.toISOString();
+    }
+
     setError(null);
     setUploading(true);
     // Tracks which step is running so an error can say where it failed
@@ -142,9 +169,16 @@ export default function CreatePost() {
         content: content.trim(),
         privacy,
         backgroundColor: activeColor,
+        scheduledAt: scheduledIso,
         media: uploaded.map((u) => ({ path: u.path, type: u.type, thumbnailPath: u.thumbnailPath })),
       });
-      navigate(`/post/${postId}`);
+
+      if (scheduledIso) {
+        // Scheduled: stay here and show a confirmation
+        setScheduledDone(scheduledIso);
+      } else {
+        navigate(`/post/${postId}`);
+      }
     } catch (err) {
       console.error(`CreatePost failed at step "${step}"`, err);
       const friendly = toFriendlyError(err);
@@ -155,6 +189,26 @@ export default function CreatePost() {
       setProgress('');
     }
   };
+
+  // Confirmation after scheduling a post
+  if (scheduledDone) {
+    return (
+      <div className="p-6 text-center">
+        <div className="mb-3 text-5xl">🗓️</div>
+        <h1 className="mb-2 text-lg font-bold">{tr('schedule_done_title', 'Post scheduled!')}</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {tr('schedule_done_body', 'It will be published on')}
+        </p>
+        <p className="mt-1 text-sm font-semibold">{new Date(scheduledDone).toLocaleString()}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="mt-6 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white"
+        >
+          {tr('schedule_done_home', 'Back to home')}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
@@ -252,12 +306,47 @@ export default function CreatePost() {
         </select>
       </div>
 
+      {/* Schedule for later */}
+      <div className="mt-4 rounded-lg border border-gray-300 p-3 dark:border-gray-700">
+        <label className="flex cursor-pointer items-center justify-between text-sm font-medium">
+          <span>🗓️ {tr('schedule_toggle', 'Schedule for later')}</span>
+          <input
+            type="checkbox"
+            checked={scheduleOn}
+            onChange={(e) => {
+              setScheduleOn(e.target.checked);
+              if (e.target.checked && !scheduleAt) {
+                // Default: one hour from now
+                setScheduleAt(toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)));
+              }
+            }}
+            disabled={uploading}
+            className="h-5 w-5"
+          />
+        </label>
+        {scheduleOn && (
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+              {tr('schedule_date_time', 'Date and time')}
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduleAt}
+              min={toLocalInputValue(new Date())}
+              onChange={(e) => setScheduleAt(e.target.value)}
+              disabled={uploading}
+              className="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
+            />
+          </div>
+        )}
+      </div>
+
       <button
         onClick={handleSubmit}
         disabled={uploading}
         className="mt-5 w-full rounded-lg bg-zumra-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {uploading ? t('please_wait') : t('post')}
+        {uploading ? t('please_wait') : scheduleOn ? tr('schedule_button', 'Schedule') : t('post')}
       </button>
 
       {/* Full-screen progress card so the status is always visible, even on small phones */}
