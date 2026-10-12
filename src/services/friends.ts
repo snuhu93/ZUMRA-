@@ -41,6 +41,19 @@ export async function fetchIncomingRequests(userId: string) {
   return data ?? [];
 }
 
+// Duk wanda yake da request (pending ko accepted) tare da wannan user, ta kowace hanya
+export async function fetchRelatedUserIds(userId: string) {
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select('sender_id, receiver_id')
+    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+    .in('status', ['pending', 'accepted']);
+  if (error) throw error;
+  return (data ?? []).map((row: any) =>
+    row.sender_id === userId ? (row.receiver_id as string) : (row.sender_id as string)
+  );
+}
+
 export async function fetchFriends(userId: string) {
   const { data, error } = await supabase
     .from('friends')
@@ -115,4 +128,4 @@ export async function fetchCounts(userId: string) {
     following: following ?? 0,
     posts: posts ?? 0
   };
-                                   }
+    }
