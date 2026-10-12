@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useT } from '@/i18n';
-import { supabase } from '@/lib/supabaseClient';
 import {
   fetchIncomingRequests,
   fetchFriends,
   fetchSuggestedFriends,
+  fetchRelatedUserIds,
   acceptFriendRequest,
   rejectFriendRequest,
   sendFriendRequest,
@@ -30,49 +30,66 @@ export default function Friends() {
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const [reqs, fr, sentRes] = await Promise.all([
-        fetchIncomingRequests(user.id),
-        fetchFriends(user.id),
-        supabase
-          .from('friend_requests')
-          .select('receiver_id')
-          .eq('sender_id', user.id)
-          .eq('status', 'pending')
-      ]);
-      if (sentRes.error) throw sentRes.error;
+  const load = useCallback(
+    async (silent = false) => {
+      if (!user) return;
+      if (!silent) setLoading(true);
+      try {
+        const [reqs, fr, relatedIds] = await Promise.all([
+          fetchIncomingRequests(user.id),
+          fetchFriends(user.id),
+          fetchRelatedUserIds(user.id)
+        ]);
 
-      setRequests(reqs);
-      setFriends(fr);
+        setRequests(reqs);
+        setFriends(fr);
 
-      const sentIds = (sentRes.data ?? []).map((r: any) => r.receiver_id as string);
-      const excludeIds = [
-        ...fr.map((f) => f.id),
-        ...reqs.map((r: any) => r.sender.id),
-        ...sentIds
-      ];
-      const sug = await fetchSuggestedFriends(user.id, excludeIds);
-      setSuggested(sug);
-      setSentMap({});
-    } catch (err) {
-      console.error('Friends load error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+        const excludeIds = Array.from(
+          new Set([
+            ...fr.map((f) => f.id),
+            ...reqs.map((r: any) => r.sender.id as string),
+            ...relatedIds
+          ])
+        );
+        const sug = await fetchSuggestedFriends(user.id, excludeIds);
+        setSuggested(sug);
+        setSentMap({});
+      } catch (err) {
+        console.error('Friends load error:', err);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [user]
+  );
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Sake lodawa shiru idan an canza tab
+  useEffect(() => {
+    load(true);
+  }, [tab, load]);
+
+  // Sake lodawa shiru idan mutum ya dawo kan shafin/app
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load(true);
+    };
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [load]);
 
   const handleAccept = async (id: string) => {
     try {
       setPendingId(id);
       await acceptFriendRequest(id);
-      load();
+      await load(true);
     } catch (err) {
       console.error('Accept friend error:', err);
       alert(t('friends.acceptFailed') + (err as Error).message);
@@ -85,7 +102,7 @@ export default function Friends() {
     try {
       setPendingId(id);
       await rejectFriendRequest(id);
-      load();
+      await load(true);
     } catch (err) {
       console.error('Reject friend error:', err);
       alert(t('friends.rejectFailed') + (err as Error).message);
