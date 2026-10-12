@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabaseClient';
-import { compressImage, compressVideo, isVideoTooLarge } from '@/utils/mediaOptimization';
+import {
+  compressImage,
+  compressVideo,
+  isVideoTooLarge,
+  MAX_VIDEO_MB,
+  MAX_VIDEO_MB_DATA_SAVER,
+} from '@/utils/mediaOptimization';
 
 type Bucket = 'avatars' | 'covers' | 'post-images' | 'post-videos' | 'message-media';
 
@@ -108,8 +114,8 @@ export async function uploadVideo(params: {
   if (isVideoTooLarge(file, params.dataSaver)) {
     throw new Error(
       params.dataSaver
-        ? 'Video is too large for Data Saver mode (max 25MB). Turn off Data Saver or choose a shorter clip.'
-        : 'Video is too large. Please choose a file under 50MB.'
+        ? `Video is too large for Data Saver mode (max ${MAX_VIDEO_MB_DATA_SAVER}MB). Turn off Data Saver or choose a shorter clip.`
+        : `Video is too large. Please choose a file under ${MAX_VIDEO_MB}MB.`
     );
   }
 
@@ -224,4 +230,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
 export async function deleteFile(bucket: Bucket, path: string) {
   const { error } = await supabase.storage.from(bucket).remove([path]);
   if (error) throw error;
-}
+  }
