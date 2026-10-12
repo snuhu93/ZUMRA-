@@ -67,12 +67,12 @@ export default function Friends() {
     load();
   }, [load]);
 
-  // Sake lodawa shiru idan an canza tab
+  // Silent reload when the tab changes
   useEffect(() => {
     load(true);
   }, [tab, load]);
 
-  // Sake lodawa shiru idan mutum ya dawo kan shafin/app
+  // Silent reload when the user returns to the page/app
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') load(true);
@@ -250,4 +250,4 @@ export default function Friends() {
       )}
     </div>
   );
-          }
+            }
