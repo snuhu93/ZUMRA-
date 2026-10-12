@@ -41,7 +41,7 @@ export async function fetchIncomingRequests(userId: string) {
   return data ?? [];
 }
 
-// Duk wanda yake da request (pending ko accepted) tare da wannan user, ta kowace hanya
+// Ids of everyone who has a pending or accepted request with this user, in either direction
 export async function fetchRelatedUserIds(userId: string) {
   const { data, error } = await supabase
     .from('friend_requests')
@@ -128,4 +128,4 @@ export async function fetchCounts(userId: string) {
     following: following ?? 0,
     posts: posts ?? 0
   };
-    }
+}
