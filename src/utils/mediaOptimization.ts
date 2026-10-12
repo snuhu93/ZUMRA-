@@ -39,8 +39,12 @@ export async function compressImage(file: File, options: CompressOptions): Promi
   }
 }
 
+// Maximum video size (checked after compression). Lower it to save Supabase quota.
+export const MAX_VIDEO_MB = 30;
+export const MAX_VIDEO_MB_DATA_SAVER = 25;
+
 export function isVideoTooLarge(file: File, dataSaver: boolean): boolean {
-  const limitMB = dataSaver ? 25 : 50;
+  const limitMB = dataSaver ? MAX_VIDEO_MB_DATA_SAVER : MAX_VIDEO_MB;
   return file.size / (1024 * 1024) > limitMB;
 }
 
@@ -222,4 +226,4 @@ async function recompress(file: File, options: VideoCompressOptions): Promise<Fi
     audioCtx?.close().catch(() => undefined);
     URL.revokeObjectURL(url);
   }
-}
+                      }
