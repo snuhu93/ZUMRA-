@@ -86,17 +86,7 @@ export async function sendMessage(params: { conversationId: string; senderId: st
     .select('id')
     .single();
   if (error) throw error;
-
-  const { data: members } = await supabase
-    .from('conversation_members')
-    .select('user_id')
-    .eq('conversation_id', params.conversationId)
-    .neq('user_id', params.senderId);
-  if (members?.length) {
-    await supabase.from('notifications').insert(
-      members.map((m) => ({ recipient_id: m.user_id, actor_id: params.senderId, type: 'new_message' as const, entity_id: params.conversationId }))
-    );
-  }
+  // Ana saka sanarwar saƙo ta trigger a Supabase (notify_new_message)
   return data.id as string;
 }
 
@@ -130,4 +120,4 @@ export function subscribeToConversation(conversationId: string, onInsert: (msg: 
   return () => {
     supabase.removeChannel(channel);
   };
-}
+      }
