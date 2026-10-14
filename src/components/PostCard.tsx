@@ -265,7 +265,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
     };
   }, [menuOpen]);
 
-  // Hide the small "Copied" message after a moment
+  // Hide the small toast message after a moment
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 1500);
@@ -312,13 +312,13 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
     if (ok) setToast('Link copied');
   };
 
-  // Long-pressing the post text copies only this post's text (no link, no author name)
+  // Long-pressing the post text copies only this post's text (no link, no author name).
+  // No toast here: Android already shows its own "Copied" message, so we only vibrate.
   const handleCopyText = async () => {
     const text = (post.content ?? '').trim();
     if (!text) return;
     const ok = await copyToClipboard(text);
     if (ok) {
-      setToast('Copied');
       try {
         navigator.vibrate?.(30);
       } catch {
