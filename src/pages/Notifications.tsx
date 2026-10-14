@@ -40,6 +40,7 @@ export default function Notifications() {
   const navigate = useNavigate();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<NotificationRow | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -50,13 +51,21 @@ export default function Notifications() {
     });
   }, [user]);
 
+  const handleClick = (n: NotificationRow) => {
+    if (n.type === 'announcement') {
+      setSelected(n);
+      return;
+    }
+    navigate(targetPath(n));
+  };
+
   if (loading) return <p className="p-6 text-center text-sm text-gray-500">{t('loading')}</p>;
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-800">
       {items.length === 0 && <p className="p-10 text-center text-sm text-gray-500">{t('no_notifications_yet')}</p>}
       {items.map((n) => (
-        <button key={n.id} onClick={() => navigate(targetPath(n))} className="flex w-full items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800">
+        <button key={n.id} onClick={() => handleClick(n)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800">
           <Avatar src={n.actor?.avatar_url} name={n.actor?.full_name ?? 'ZUMRA'} />
           <div className="flex-1">
             <p className={`text-sm ${!n.is_read ? 'font-semibold' : ''}`}>{notificationMessage(n)}</p>
@@ -65,6 +74,33 @@ export default function Notifications() {
           {!n.is_read && <span className="h-2 w-2 rounded-full bg-zumra-500" />}
         </button>
       ))}
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <Avatar src={selected.actor?.avatar_url} name={selected.actor?.full_name ?? 'ZUMRA'} />
+              <div>
+                <p className="text-sm font-semibold">ZUMRA</p>
+                <p className="text-xs text-gray-500">{timeAgo(selected.created_at)}</p>
+              </div>
+            </div>
+            <p className="whitespace-pre-wrap break-words text-sm">{notificationMessage(selected)}</p>
+            <button
+              onClick={() => setSelected(null)}
+              className="mt-4 w-full rounded-lg bg-zumra-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-    }
+  }
