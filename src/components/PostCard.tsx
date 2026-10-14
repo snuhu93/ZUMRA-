@@ -6,7 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { toggleLike, toggleSave, deletePost, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import { optimizedImageUrl } from '@/utils/mediaOptimization';
-import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -237,6 +237,8 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const [muted, setMuted] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [copySheetOpen, setCopySheetOpen] = useState(false);
+  const sheetOpenedAt = useRef(0);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -312,22 +314,33 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
     if (ok) setToast('Link copied');
   };
 
-  // Long-pressing the post text copies only this post's text (no link, no author name).
-  // No toast here: Android already shows its own "Copied" message, so we only vibrate.
-  const handleCopyText = async () => {
-    const text = (post.content ?? '').trim();
-    if (!text) return;
-    const ok = await copyToClipboard(text);
-    if (ok) {
-      try {
-        navigator.vibrate?.(30);
-      } catch {
-        // vibration not supported, ignore
-      }
+  // Long-pressing the post text opens a small bottom sheet with "Copy text"
+  const handleLongPressText = () => {
+    if (!(post.content ?? '').trim()) return;
+    sheetOpenedAt.current = Date.now();
+    setCopySheetOpen(true);
+    try {
+      navigator.vibrate?.(30);
+    } catch {
+      // vibration not supported, ignore
     }
   };
 
-  const longPressText = useLongPress(handleCopyText, 500);
+  // Closing right after opening is ignored, so lifting the finger does not close the sheet
+  const closeCopySheet = () => {
+    if (Date.now() - sheetOpenedAt.current < 400) return;
+    setCopySheetOpen(false);
+  };
+
+  // Copies only this post's text (no link, no author name)
+  const handleCopyText = async () => {
+    setCopySheetOpen(false);
+    const text = (post.content ?? '').trim();
+    if (!text) return;
+    await copyToClipboard(text);
+  };
+
+  const longPressText = useLongPress(handleLongPressText, 500);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
@@ -482,6 +495,30 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
         </div>
       )}
 
+      {copySheetOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end bg-black/50"
+          onClick={closeCopySheet}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div
+            className="w-full rounded-t-2xl bg-white px-4 pb-8 pt-3 dark:bg-gray-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <button
+              onClick={handleCopyText}
+              className="flex w-full items-center gap-4 rounded-lg px-2 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                <Copy size={20} />
+              </span>
+              <span className="text-lg font-medium">Copy text</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {activeVideo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
           <button
@@ -568,4 +605,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-}
+  }
