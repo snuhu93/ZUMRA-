@@ -20,6 +20,29 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
+// Copies text to the clipboard, with a fallback for browsers without the Clipboard API
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    document.body.removeChild(area);
+    return ok;
+  }
+}
+
 // A video that plays/pauses itself while scrolling
 function FeedVideoPreview({
   src,
@@ -165,9 +188,41 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const [fullscreenMediaId, setFullscreenMediaId] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isOwner = user?.id === post.author_id;
+
+  // Close the options menu when the user scrolls or taps outside of it
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const close = () => setMenuOpen(false);
+    const onPointerDown = (e: Event) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    // capture = true so scrolling inside any scroll container is detected
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('wheel', close, { passive: true });
+    document.addEventListener('pointerdown', onPointerDown);
+
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('wheel', close);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [menuOpen]);
+
+  // Hide the small "Copied" message after a moment
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 1500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const handleLike = async () => {
     if (!user || busy) return;
@@ -186,6 +241,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   };
 
   const handleSave = async () => {
+    setMenuOpen(false);
     if (!user) return;
     const next = !saved;
     setSaved(next);
@@ -204,7 +260,20 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
 
   const handleCopyLink = async () => {
     setMenuOpen(false);
-    await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+    const ok = await copyToClipboard(`${window.location.origin}/post/${post.id}`);
+    if (ok) setToast('Link copied');
+  };
+
+  // Tapping the post text copies only the text (no link, no author name)
+  const handleCopyText = async () => {
+    // If the person is selecting text by long-press, let the browser handle it
+    const selected = window.getSelection()?.toString();
+    if (selected && selected.length > 0) return;
+
+    const text = (post.content ?? '').trim();
+    if (!text) return;
+    const ok = await copyToClipboard(text);
+    if (ok) setToast('Copied');
   };
 
   const handleShare = async () => {
@@ -216,12 +285,8 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
         // user cancelled the share sheet, do nothing
       }
     } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard');
-      } catch {
-        // clipboard not available, ignore
-      }
+      const ok = await copyToClipboard(url);
+      if (ok) setToast('Link copied');
     }
   };
 
@@ -247,12 +312,12 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
             </p>
           </div>
         </Link>
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen((v) => !v)} aria-label="Post options" className="px-2 text-gray-400">⋯</button>
           {menuOpen && (
             <div className="absolute right-0 z-10 w-40 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800">
               {isOwner && (
-                <button onClick={() => navigate(`/post/${post.id}/edit`)} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Edit</button>
+                <button onClick={() => { setMenuOpen(false); navigate(`/post/${post.id}/edit`); }} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Edit</button>
               )}
               {isOwner && (
                 <button onClick={handleDelete} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">Delete</button>
@@ -260,7 +325,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
               <button onClick={handleSave} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">{saved ? 'Unsave' : 'Save'}</button>
               <button onClick={handleCopyLink} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Copy link</button>
               {!isOwner && (
-                <button onClick={() => navigate(`/report?type=post&id=${post.id}`)} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">Report</button>
+                <button onClick={() => { setMenuOpen(false); navigate(`/report?type=post&id=${post.id}`); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">Report</button>
               )}
             </div>
           )}
@@ -272,10 +337,22 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           className="mt-3 flex min-h-[14rem] items-center justify-center p-6"
           style={{ backgroundColor: post.background_color ?? undefined }}
         >
-          <p className="selectable whitespace-pre-wrap break-words text-center text-xl font-bold text-white">{post.content}</p>
+          <p
+            onClick={handleCopyText}
+            className="selectable whitespace-pre-wrap break-words text-center text-xl font-bold text-white"
+          >
+            {post.content}
+          </p>
         </div>
       ) : (
-        post.content && <p className="selectable mt-3 whitespace-pre-wrap px-4 text-sm">{post.content}</p>
+        post.content && (
+          <p
+            onClick={handleCopyText}
+            className="selectable mt-3 whitespace-pre-wrap px-4 text-sm"
+          >
+            {post.content}
+          </p>
+        )
       )}
 
       {sortedMedia.length > 0 && (
@@ -336,6 +413,12 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           <span className="text-sm text-gray-500 dark:text-gray-400">{post.share_count}</span>
         </button>
       </div>
+
+      {toast && (
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-[110] -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-sm text-white">
+          {toast}
+        </div>
+      )}
 
       {activeVideo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
@@ -423,4 +506,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-  }
+                              }
