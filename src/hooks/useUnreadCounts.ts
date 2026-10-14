@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "../lib/supabase"; // gyara hanyar idan ta bambanta
+import { supabase } from "@/lib/supabase"; // maye gurbin da hanyar da ke storage.ts
 
 export function useUnreadCounts(userId: string | undefined) {
   const [notifCount, setNotifCount] = useState(0);
@@ -48,4 +48,4 @@ export function useUnreadCounts(userId: string | undefined) {
   }, [userId, refresh]);
 
   return { notifCount, msgCount, refresh };
-  }
+}
