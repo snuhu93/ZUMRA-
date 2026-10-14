@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { unreadCount } from '@/services/notifications';
 import { unreadConversationsCount } from '@/services/messages';
+import { supabase } from '@/lib/supabaseClient';
 import { useT } from '@/i18n';
 
 export default function TopHeader() {
@@ -19,19 +20,35 @@ export default function TopHeader() {
 
     let cancelled = false;
     const load = () => {
-      unreadCount(user.id).then((n) => {
-        if (!cancelled) setUnreadNotifs(n);
-      });
-      unreadConversationsCount(user.id).then((n) => {
-        if (!cancelled) setUnreadMessages(n);
-      });
+      unreadCount(user.id)
+        .then((n) => {
+          if (!cancelled) setUnreadNotifs(n);
+        })
+        .catch((e) => console.error('unreadCount error:', e));
+      unreadConversationsCount(user.id)
+        .then((n) => {
+          if (!cancelled) setUnreadMessages(n);
+        })
+        .catch((e) => console.error('unreadConversationsCount error:', e));
     };
 
     load();
     const interval = setInterval(load, 20000);
+
+    const channel = supabase
+      .channel(`header-badges-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${user.id}` },
+        () => load()
+      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => load())
+      .subscribe();
+
     return () => {
       cancelled = true;
       clearInterval(interval);
+      supabase.removeChannel(channel);
     };
   }, [user]);
 
@@ -166,4 +183,4 @@ export default function TopHeader() {
       </div>
     </header>
   );
-}
+                               }
