@@ -43,6 +43,54 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+// Long-press helper: runs onLongPress after the finger/mouse is held still for `ms`
+function useLongPress(onLongPress: () => void, ms = 500) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPos = useRef<{ x: number; y: number } | null>(null);
+  const callbackRef = useRef(onLongPress);
+  callbackRef.current = onLongPress;
+
+  const clear = () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    startPos.current = null;
+  };
+
+  const start = (x: number, y: number) => {
+    clear();
+    startPos.current = { x, y };
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      startPos.current = null;
+      callbackRef.current();
+    }, ms);
+  };
+
+  // Cancel if the finger moves (the person is scrolling)
+  const move = (x: number, y: number) => {
+    if (!startPos.current) return;
+    if (Math.abs(x - startPos.current.x) > 10 || Math.abs(y - startPos.current.y) > 10) {
+      clear();
+    }
+  };
+
+  useEffect(() => clear, []);
+
+  return {
+    onTouchStart: (e: React.TouchEvent) => start(e.touches[0].clientX, e.touches[0].clientY),
+    onTouchMove: (e: React.TouchEvent) => move(e.touches[0].clientX, e.touches[0].clientY),
+    onTouchEnd: clear,
+    onTouchCancel: clear,
+    onMouseDown: (e: React.MouseEvent) => start(e.clientX, e.clientY),
+    onMouseUp: clear,
+    onMouseLeave: clear,
+    // Stops the browser's own long-press menu (Select all / Copy all)
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  };
+}
+
 // A video that plays/pauses itself while scrolling
 function FeedVideoPreview({
   src,
@@ -264,17 +312,22 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
     if (ok) setToast('Link copied');
   };
 
-  // Tapping the post text copies only the text (no link, no author name)
+  // Long-pressing the post text copies only this post's text (no link, no author name)
   const handleCopyText = async () => {
-    // If the person is selecting text by long-press, let the browser handle it
-    const selected = window.getSelection()?.toString();
-    if (selected && selected.length > 0) return;
-
     const text = (post.content ?? '').trim();
     if (!text) return;
     const ok = await copyToClipboard(text);
-    if (ok) setToast('Copied');
+    if (ok) {
+      setToast('Copied');
+      try {
+        navigator.vibrate?.(30);
+      } catch {
+        // vibration not supported, ignore
+      }
+    }
   };
+
+  const longPressText = useLongPress(handleCopyText, 500);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
@@ -299,6 +352,13 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
 
   // Colored text-only post (like a status)
   const isColoredPost = !!post.background_color && !!post.content && sortedMedia.length === 0;
+
+  // No native text selection on post text, so the browser never shows "Select all"
+  const noSelectStyle: React.CSSProperties = {
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTouchCallout: 'none',
+  };
 
   return (
     <article className="mb-2 bg-white py-3 dark:bg-gray-900">
@@ -338,8 +398,9 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           style={{ backgroundColor: post.background_color ?? undefined }}
         >
           <p
-            onClick={handleCopyText}
-            className="selectable whitespace-pre-wrap break-words text-center text-xl font-bold text-white"
+            {...longPressText}
+            style={noSelectStyle}
+            className="whitespace-pre-wrap break-words text-center text-xl font-bold text-white"
           >
             {post.content}
           </p>
@@ -347,8 +408,9 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       ) : (
         post.content && (
           <p
-            onClick={handleCopyText}
-            className="selectable mt-3 whitespace-pre-wrap px-4 text-sm"
+            {...longPressText}
+            style={noSelectStyle}
+            className="mt-3 whitespace-pre-wrap px-4 text-sm"
           >
             {post.content}
           </p>
@@ -506,4 +568,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-                              }
+}
