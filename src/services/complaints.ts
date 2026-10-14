@@ -38,6 +38,9 @@ export async function fetchComplaints(status: string | null) {
 }
 
 export async function setComplaintStatus(id: string, status: 'new' | 'seen' | 'resolved') {
-  const { error } = await db.from('complaints').update({ status }).eq('id', id);
+  const { error } = await db.rpc('admin_set_complaint_status', {
+    p_complaint_id: id,
+    p_status: status,
+  });
   if (error) throw error;
-}
+    }
