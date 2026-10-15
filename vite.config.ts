@@ -17,12 +17,16 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['apple-touch-icon.png', 'icon-192.png', 'icon-512-1.png'],
       manifest: {
+        id: '/',
         name: 'ZUMRA',
         short_name: 'ZUMRA',
         description: 'Connect. Share. Belong.',
+        lang: 'en',
+        categories: ['social'],
         theme_color: '#0f7b55',
         background_color: '#0f7b55',
         display: 'standalone',
+        scope: '/',
         start_url: '/',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -36,12 +40,12 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
         runtimeCaching: [
-          // Bidiyo: kai tsaye ta network
+          // Videos: always straight from the network (never cached)
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*\.(mp4|webm|mov|m4v)$/,
             handler: 'NetworkOnly'
           },
-          // Sauran media: CacheFirst
+          // Other media: cache first
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/,
             handler: 'CacheFirst',
