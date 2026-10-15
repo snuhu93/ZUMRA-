@@ -62,22 +62,24 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
       .then(({ data }) => setList((data as Rec[]) || []));
   }, [reloadKey]);
 
-  // Anyone (host or listener) can share a recording
+  // Anyone (host or listener) can share a recording.
+  // The link opens a public Zumra page (/recording/ID), not the raw audio file.
   const shareRec = async (r: Rec) => {
     setNotice("");
     const title = r.title || "Zumra Radio";
+    const link = `${window.location.origin}/recording/${r.id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title, text: title, url: r.file_url });
+        await navigator.share({ title, text: title, url: link });
         return;
       }
-      await navigator.clipboard.writeText(r.file_url);
+      await navigator.clipboard.writeText(link);
       setNotice("Link copied");
     } catch (e: any) {
       // If the person closes the share menu themselves, it is not an error
       if (e?.name === "AbortError") return;
       try {
-        await navigator.clipboard.writeText(r.file_url);
+        await navigator.clipboard.writeText(link);
         setNotice("Link copied");
       } catch {
         setNotice("Could not share the recording.");
@@ -385,4 +387,4 @@ export default function RadioRecorder({
       {msg && <p>{msg}</p>}
     </div>
   );
-                           }
+                }
