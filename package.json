@@ -10,15 +10,18 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
     "@supabase/supabase-js": "^2.45.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2",
     "browser-image-compression": "^2.0.2",
     "livekit-client": "^2.5.0",
-    "lucide-react": "^0.454.0"
+    "lucide-react": "^0.454.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
     "@types/node": "^22.5.4",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
