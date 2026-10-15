@@ -46,7 +46,7 @@ function pathFromUrl(url: string) {
   return decodeURIComponent(url.slice(i + marker.length).split("?")[0]);
 }
 
-// List of recordings (everyone can listen, only the host can share or delete)
+// List of recordings (everyone can listen and share, only the host can delete)
 export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
   const { user } = useAuth();
   const [list, setList] = useState<Rec[]>([]);
@@ -62,6 +62,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
       .then(({ data }) => setList((data as Rec[]) || []));
   }, [reloadKey]);
 
+  // Anyone (host or listener) can share a recording
   const shareRec = async (r: Rec) => {
     setNotice("");
     const title = r.title || "Zumra Radio";
@@ -84,6 +85,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
     }
   };
 
+  // Only the host who made the recording can delete it
   const deleteRec = async (r: Rec) => {
     if (!user || user.id !== r.host_id) return;
     if (!window.confirm("Delete this recording? This cannot be undone.")) {
@@ -134,6 +136,7 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              flexWrap: "wrap",
               gap: 8,
               marginBottom: 6,
             }}
@@ -141,18 +144,18 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
             <span>
               {r.title} · {fmt(r.duration)}
             </span>
-            {user?.id === r.host_id && (
-              <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  onClick={() => shareRec(r)}
-                  style={{
-                    ...recBtn("#2563eb"),
-                    padding: "6px 10px",
-                    fontSize: 13,
-                  }}
-                >
-                  📤 Share
-                </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => shareRec(r)}
+                style={{
+                  ...recBtn("#2563eb"),
+                  padding: "6px 10px",
+                  fontSize: 13,
+                }}
+              >
+                📤 Share
+              </button>
+              {user?.id === r.host_id && (
                 <button
                   onClick={() => deleteRec(r)}
                   disabled={deletingId === r.id}
@@ -164,8 +167,8 @@ export function RecordingsList({ reloadKey = 0 }: { reloadKey?: number }) {
                 >
                   {deletingId === r.id ? "..." : "🗑 Delete"}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           <audio controls src={r.file_url} style={{ width: "100%" }} />
         </div>
@@ -382,4 +385,4 @@ export default function RadioRecorder({
       {msg && <p>{msg}</p>}
     </div>
   );
-  }
+                           }
