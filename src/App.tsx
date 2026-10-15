@@ -79,6 +79,10 @@ export default function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/recording/:id" element={<RecordingPage />} />
 
+                {/* Public pages (needed by app stores: no login required) */}
+                <Route path="/about" element={<About />} />
+                <Route path="/privacy" element={<About />} />
+
                 {/* Main app -- all wrapped in AppLayout (header + bottom nav) */}
                 <Route path="/" element={<Protected><Home /></Protected>} />
                 <Route path="/reels" element={<Protected><Reels /></Protected>} />
@@ -108,7 +112,6 @@ export default function App() {
                 <Route path="/settings/blocked" element={<Protected><BlockedUsers /></Protected>} />
                 <Route path="/report" element={<Protected><Report /></Protected>} />
                 <Route path="/complaint" element={<Protected><ComplaintPage /></Protected>} />
-                <Route path="/about" element={<Protected><About /></Protected>} />
 
                 <Route
                   path="/admin"
@@ -144,4 +147,4 @@ export default function App() {
       </AuthProvider>
     </BrowserRouter>
   );
-}
+                            }
