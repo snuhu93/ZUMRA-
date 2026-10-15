@@ -37,6 +37,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 const ComplaintPage = lazy(() => import('@/pages/ComplaintPage'));
 const AdminComplaints = lazy(() => import('@/pages/AdminComplaints'));
 const Radio = lazy(() => import('@/pages/Radio'));
+const RecordingPage = lazy(() => import('@/pages/RecordingPage'));
 
 function PageFallback() {
   return (
@@ -76,6 +77,7 @@ export default function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/recording/:id" element={<RecordingPage />} />
 
                 {/* Main app -- all wrapped in AppLayout (header + bottom nav) */}
                 <Route path="/" element={<Protected><Home /></Protected>} />
