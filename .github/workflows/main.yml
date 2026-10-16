@@ -53,14 +53,15 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > zumra.keystore
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > zumra.keystore
+          PASS=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '\r\n ')
+          keytool -list -keystore zumra.keystore -storepass "$PASS" | grep -i "entry"
           cp android/app/build/outputs/bundle/release/app-release.aab zumra-signed.aab
           jarsigner -keystore zumra.keystore \
-            -storepass "$KEYSTORE_PASSWORD" \
+            -storepass "$PASS" \
             -sigalg SHA256withRSA -digestalg SHA-256 \
-            zumra-signed.aab "$KEY_ALIAS"
+            zumra-signed.aab zumra
           jarsigner -verify zumra-signed.aab
 
       - name: Upload AAB
