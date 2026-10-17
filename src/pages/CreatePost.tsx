@@ -133,24 +133,23 @@ export default function CreatePost() {
         } else {
           // Step 1: create the thumbnail first (from the original file, fast)
           let thumbnailPath: string | undefined;
-          try {
-            step = 'Thumbnail';
-            setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
-            const [thumbFile] = await Promise.all([
-              generateVideoThumbnail(m.file),
-              new Promise((r) => setTimeout(r, 1200)),
-            ]);
-            const { path: thumbPath } = await uploadImage({
-              file: thumbFile,
-              userId: user.id,
-              bucket: 'post-images',
-              kind: 'post',
-              dataSaver,
-            });
-            thumbnailPath = thumbPath;
-          } catch (e) {
-            // If thumbnail generation fails, continue without it
-            console.error('Thumbnail failed', e);
+          step = 'Thumbnail';
+          setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
+          for (let attempt = 1; attempt <= 2 && !thumbnailPath; attempt++) {
+            try {
+              const thumbFile = await generateVideoThumbnail(m.file);
+              const { path: thumbPath } = await uploadImage({
+                file: thumbFile,
+                userId: user.id,
+                bucket: 'post-images',
+                kind: 'post',
+                dataSaver,
+              });
+              thumbnailPath = thumbPath;
+            } catch (e) {
+              // If thumbnail generation fails, we try once more, then continue without it
+              console.error(`Thumbnail failed (attempt ${attempt})`, e);
+            }
           }
 
           // Step 2: compress, then upload the video
@@ -390,4 +389,4 @@ export default function CreatePost() {
       )}
     </div>
   );
-    }
+}
