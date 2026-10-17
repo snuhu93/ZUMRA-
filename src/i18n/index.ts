@@ -142,6 +142,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'Search Zumra', settings: 'Settings',
     edit: 'Edit', delete: 'Delete', save: 'Save', unsave: 'Unsave',
     copy_link: 'Copy link', link_copied: 'Link copied to clipboard', time_now: 'now',
+    copy_text: 'Copy text',
     whats_on_your_mind: "What's on your mind?",
     feed_error: 'Something went wrong loading your feed. Please try again.',
     try_again: 'Try again', create_first_post: 'Create your first post',
@@ -380,6 +381,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'Bincika a Zumra', settings: 'Saituna',
     edit: 'Gyara', delete: 'Goge', save: 'Ajiye', unsave: 'Cire daga ajiya',
     copy_link: 'Kwafi hanyar haɗi', link_copied: 'An kwafi hanyar haɗi', time_now: 'yanzu',
+    copy_text: 'Kwafi rubutu',
     whats_on_your_mind: 'Me kake tunani?',
     feed_error: 'Wani abu ya faru wajen loda shafinka. Da fatan a sake gwadawa.',
     try_again: 'Sake gwadawa', create_first_post: 'Ƙirƙiri wallafarka ta farko',
@@ -618,6 +620,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'Rechercher sur Zumra', settings: 'Paramètres',
     edit: 'Modifier', delete: 'Supprimer', save: 'Enregistrer', unsave: 'Retirer des enregistrements',
     copy_link: 'Copier le lien', link_copied: 'Lien copié dans le presse-papiers', time_now: 'maintenant',
+    copy_text: 'Copier le texte',
     whats_on_your_mind: 'À quoi pensez-vous ?',
     feed_error: "Une erreur s'est produite lors du chargement de votre fil. Veuillez réessayer.",
     try_again: 'Réessayer', create_first_post: 'Créez votre première publication',
@@ -856,6 +859,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'ابحث في Zumra', settings: 'الإعدادات',
     edit: 'تعديل', delete: 'حذف', save: 'حفظ', unsave: 'إلغاء الحفظ',
     copy_link: 'نسخ الرابط', link_copied: 'تم نسخ الرابط', time_now: 'الآن',
+    copy_text: 'نسخ النص',
     whats_on_your_mind: 'بماذا تفكر؟',
     feed_error: 'حدث خطأ أثناء تحميل الموجز. يرجى المحاولة مرة أخرى.',
     try_again: 'حاول مرة أخرى', create_first_post: 'أنشئ أول منشور لك',
@@ -1094,6 +1098,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'Wá lórí Zumra', settings: 'Ètò',
     edit: 'Ṣàtúnṣe', delete: 'Parẹ́', save: 'Fipamọ́', unsave: 'Yọ kúrò nínú ìpamọ́',
     copy_link: 'Ṣe ẹ̀dà ọ̀nà àsopọ̀', link_copied: 'A ti ṣe ẹ̀dà ọ̀nà àsopọ̀', time_now: 'báyìí',
+    copy_text: 'Ṣe ẹ̀dà ọ̀rọ̀',
     whats_on_your_mind: 'Kí ni ó wà lọ́kàn rẹ?',
     feed_error: 'Nǹkan kan ṣẹlẹ̀ nígbà tí a ń gbé ìròyìn rẹ wá. Jọ̀wọ́ gbìyànjú lẹ́ẹ̀kan sí i.',
     try_again: 'Gbìyànjú lẹ́ẹ̀kan sí i', create_first_post: 'Ṣẹ̀dá ìfìwéránṣẹ́ àkọ́kọ́ rẹ',
@@ -1332,6 +1337,7 @@ const translations: Record<Lang, Record<string, string>> = {
     search_zumra: 'Chọọ na Zumra', settings: 'Ntọala',
     edit: 'Dezie', delete: 'Hichapụ', save: 'Chekwaa', unsave: 'Wepụ n’ichekwa',
     copy_link: 'Detuo njikọ', link_copied: 'E detuola njikọ', time_now: 'ugbu a',
+    copy_text: 'Detuo ederede',
     whats_on_your_mind: 'Gịnị bụ echiche gị?',
     feed_error: 'Ihe mere mgbe a na-ebu ihe ndị ị na-ele. Biko nwaa ọzọ.',
     try_again: 'Nwaa ọzọ', create_first_post: 'Mepụta ederede mbụ gị',
@@ -1489,4 +1495,4 @@ export function useLang(): Lang {
 export function useT() {
   useLang();
   return t;
-    }
+      }
