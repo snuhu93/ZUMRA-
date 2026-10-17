@@ -128,16 +128,14 @@ function FeedVideoPreview({
     >
       <video
         ref={ref}
-        src={`${src}#t=0.1`}
+        src={thumbnail ? src : `${src}#t=0.1`}
+        poster={thumbnail ?? undefined}
         preload="metadata"
         muted
         loop
         playsInline
         className="absolute inset-0 h-full w-full object-cover"
       />
-      {thumbnail && (
-        <img src={thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: 0 }} />
-      )}
       <span className="z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-xl">▶</span>
     </button>
   );
@@ -605,4 +603,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-  }
+    }
