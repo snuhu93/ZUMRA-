@@ -3,14 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '@/components/Avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useT } from '@/i18n';
 import { toggleLike, toggleSave, deletePost, type FeedPost } from '@/services/posts';
 import { getPublicUrl } from '@/services/storage';
 import { optimizedImageUrl } from '@/utils/mediaOptimization';
 import { ThumbsUp, MessageCircle, Share2, X, Volume2, VolumeX, Globe, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, nowLabel: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return 'now';
+  if (seconds < 60) return nowLabel;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
@@ -223,6 +224,7 @@ export function ImageLightbox({
 }
 
 export default function PostCard({ post, onChanged }: { post: FeedPost; onChanged?: () => void }) {
+  const t = useT();
   const { user } = useAuth();
   const { dataSaver, autoplayVideos } = useSettings();
   const navigate = useNavigate();
@@ -309,7 +311,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
   const handleCopyLink = async () => {
     setMenuOpen(false);
     const ok = await copyToClipboard(`${window.location.origin}/post/${post.id}`);
-    if (ok) setToast('Link copied');
+    if (ok) setToast(t('link_copied'));
   };
 
   // Long-pressing the post text opens a small bottom sheet with "Copy text"
@@ -350,7 +352,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       }
     } else {
       const ok = await copyToClipboard(url);
-      if (ok) setToast('Link copied');
+      if (ok) setToast(t('link_copied'));
     }
   };
 
@@ -379,7 +381,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           <div>
             <p className="text-sm font-semibold">{post.author?.full_name}</p>
             <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              @{post.author?.username} · {timeAgo(post.created_at)} · <Globe size={12} />
+              @{post.author?.username} · {timeAgo(post.created_at, t('time_now'))} · <Globe size={12} />
             </p>
           </div>
         </Link>
@@ -388,15 +390,15 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
           {menuOpen && (
             <div className="absolute right-0 z-10 w-40 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800">
               {isOwner && (
-                <button onClick={() => { setMenuOpen(false); navigate(`/post/${post.id}/edit`); }} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Edit</button>
+                <button onClick={() => { setMenuOpen(false); navigate(`/post/${post.id}/edit`); }} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">{t('edit')}</button>
               )}
               {isOwner && (
-                <button onClick={handleDelete} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">Delete</button>
+                <button onClick={handleDelete} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">{t('delete')}</button>
               )}
-              <button onClick={handleSave} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">{saved ? 'Unsave' : 'Save'}</button>
-              <button onClick={handleCopyLink} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Copy link</button>
+              <button onClick={handleSave} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">{saved ? t('unsave') : t('save')}</button>
+              <button onClick={handleCopyLink} className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">{t('copy_link')}</button>
               {!isOwner && (
-                <button onClick={() => { setMenuOpen(false); navigate(`/report?type=post&id=${post.id}`); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">Report</button>
+                <button onClick={() => { setMenuOpen(false); navigate(`/report?type=post&id=${post.id}`); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">{t('report')}</button>
               )}
             </div>
           )}
@@ -511,7 +513,7 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
                 <Copy size={20} />
               </span>
-              <span className="text-lg font-medium">Copy text</span>
+              <span className="text-lg font-medium">{t('copy_text')}</span>
             </button>
           </div>
         </div>
@@ -603,4 +605,4 @@ export default function PostCard({ post, onChanged }: { post: FeedPost; onChange
       )}
     </article>
   );
-    }
+  }
