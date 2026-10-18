@@ -5,6 +5,7 @@ export async function searchPeople(query: string) {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, username, full_name, avatar_url')
+    .eq('email_confirmed', true)
     .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
     .limit(15);
   if (error) throw error;
@@ -15,12 +16,15 @@ export async function searchPosts(query: string) {
   if (!query.trim()) return [];
   const { data, error } = await supabase
     .from('posts')
-    .select(`id, content, created_at, author:profiles!posts_author_id_fkey(id, username, full_name, avatar_url)`)
+    .select(
+      `id, content, created_at, author:profiles!posts_author_id_fkey!inner(id, username, full_name, avatar_url, email_confirmed)`
+    )
     .eq('is_deleted', false)
     .eq('privacy', 'public')
+    .eq('author.email_confirmed', true)
     .ilike('content', `%${query}%`)
     .order('created_at', { ascending: false })
     .limit(15);
   if (error) throw error;
   return data ?? [];
-}
+    }
