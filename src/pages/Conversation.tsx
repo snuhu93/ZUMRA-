@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import Avatar from '@/components/Avatar';
 import VoiceRecorderButton from '@/components/VoiceRecorderButton';
 import VoiceMessageBubble from '@/components/VoiceMessageBubble';
+import TextMessageBubble from '@/components/TextMessageBubble';
 import { useLang } from '@/i18n';
 import { useChatT } from '@/lib/chatStrings';
 import {
@@ -136,7 +137,12 @@ export default function Conversation() {
                     isMine={mine}
                   />
                 ) : (
-                  <p>{m.content}</p>
+                  <TextMessageBubble
+                    messageId={m.id}
+                    content={m.content ?? ''}
+                    myLanguage={myLanguage}
+                    isMine={mine}
+                  />
                 )}
                 <div className="mt-1 flex items-center gap-2 text-[10px] opacity-70">
                   <span>{m._pending ? (isOffline ? t('waiting_for_connection') : t('sending')) : new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -177,4 +183,4 @@ export default function Conversation() {
       </div>
     </div>
   );
-          }
+}
