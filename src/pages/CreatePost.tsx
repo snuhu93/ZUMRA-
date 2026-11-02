@@ -80,10 +80,16 @@ export default function CreatePost() {
     setMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Users only see one simple message for videos. Thumbnail creation and
+  // compression still run in the background, but are not shown to the user.
+  const videoMessage = () => tr('uploading_video', 'Uploading video…');
+
   const statusText = (s: VideoStatus) => {
-    if (s.step === 'compressing') return tr('compressing_video', 'Compressing video…');
-    if (s.step === 'uploading') return tr('uploading_video', 'Uploading video…');
-    return `${tr('retrying_upload', 'Retrying upload')} (${s.attempt}/${s.total})`;
+    if (s.step === 'retrying') {
+      return `${tr('retrying_upload', 'Retrying upload')} (${s.attempt}/${s.total})`;
+    }
+    // 'compressing' and 'uploading' both show the same simple message
+    return videoMessage();
   };
 
   const handleSubmit = async () => {
@@ -133,29 +139,25 @@ export default function CreatePost() {
         } else {
           // Step 1: thumbnail. It never blocks the post: if it fails or takes
           // too long (20 seconds max), the video is posted without it.
+          // The user only sees the simple "Uploading video…" message.
           step = 'Thumbnail';
-          setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
+          setProgress(`${prefix}${videoMessage()}`);
           const thumbnailPath = await createVideoThumbnail({
             file: m.file,
             userId: user.id,
             dataSaver,
           });
 
-          // Step 2: compress, then upload the video
+          // Step 2: compress, then upload the video (compression is not shown to the user)
           step = 'Video upload';
-          let currentStatus = tr('preparing_video', 'Preparing video…');
-          setProgress(`${prefix}${currentStatus}`);
+          setProgress(`${prefix}${videoMessage()}`);
 
           const { path } = await uploadVideo({
             file: m.file,
             userId: user.id,
             dataSaver,
             onStatus: (s) => {
-              currentStatus = statusText(s);
-              setProgress(`${prefix}${currentStatus}`);
-            },
-            onProgress: (percent) => {
-              setProgress(`${prefix}${currentStatus} ${Math.round(percent)}%`);
+              setProgress(`${prefix}${statusText(s)}`);
             },
           });
 
@@ -378,4 +380,4 @@ export default function CreatePost() {
       )}
     </div>
   );
-                           }
+    }
