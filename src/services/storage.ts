@@ -18,7 +18,29 @@ const MAX_UPLOAD_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [2000, 4000];
 const MIN_STATUS_MS = 800;
 
+// Video thumbnail limits
+const THUMB_MAX_SIDE = 480;
+const THUMB_GENERATE_TIMEOUT_MS = 6000;
+const THUMB_TOTAL_TIMEOUT_MS = 20000;
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Rejects if the promise takes longer than `ms`. */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 /** True when the request never reached the server (offline, paused project, DNS, CORS, wrong URL). */
 function isNetworkError(err: any): boolean {
@@ -151,14 +173,24 @@ export async function uploadVideo(params: {
     : new Error('Video upload failed. Please check your connection and try again.');
 }
 
+/**
+ * Grabs one small frame (max 480px) from a video file as a JPEG.
+ * Fails fast (6 seconds) instead of hanging on phones that cannot decode the video.
+ */
 export function generateVideoThumbnail(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     const url = URL.createObjectURL(file);
     let settled = false;
+    let seeking = false;
 
     const cleanup = () => {
       clearTimeout(timer);
+      video.onloadedmetadata = null;
+      video.onloadeddata = null;
+      video.onseeked = null;
+      video.onerror = null;
+      video.pause();
       URL.revokeObjectURL(url);
     };
     const fail = (message: string) => {
@@ -169,29 +201,32 @@ export function generateVideoThumbnail(file: File): Promise<File> {
     };
 
     // Never hang forever on devices that don't fire the video events
-    const timer = setTimeout(() => fail('Thumbnail timed out'), 8000);
+    const timer = setTimeout(() => fail('Thumbnail timed out'), THUMB_GENERATE_TIMEOUT_MS);
 
-    video.preload = 'auto';
-    video.muted = true;
-    video.playsInline = true;
-    video.src = url;
-
-    video.onloadeddata = () => {
-      const duration = Number.isFinite(video.duration) ? video.duration : 0;
-      video.currentTime = Math.min(0.1, duration / 2);
-    };
-
-    video.onseeked = () => {
+    const capture = () => {
       if (settled) return;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) {
+        fail('Video has no picture size');
+        return;
+      }
+      // Shrink the frame so low-end phones don't run out of memory
+      const scale = Math.min(1, THUMB_MAX_SIDE / Math.max(vw, vh));
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = Math.max(1, Math.round(vw * scale));
+      canvas.height = Math.max(1, Math.round(vh * scale));
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         fail('Could not create canvas context');
         return;
       }
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch {
+        fail('Could not draw the video frame');
+        return;
+      }
       canvas.toBlob(
         (blob) => {
           if (settled) return;
@@ -204,12 +239,70 @@ export function generateVideoThumbnail(file: File): Promise<File> {
           resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
         },
         'image/jpeg',
-        0.8
+        0.75
       );
     };
 
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+
+    // Some Android phones don't load any frame until play() is called
+    video.onloadedmetadata = () => {
+      const p = video.play();
+      if (p && typeof p.catch === 'function') p.catch(() => undefined);
+    };
+
+    video.onloadeddata = () => {
+      if (settled || seeking) return;
+      seeking = true;
+      video.pause();
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      const target = Math.min(0.5, duration / 2);
+      // If there is nothing to seek to, take the frame we already have
+      if (target <= 0 || Math.abs(video.currentTime - target) < 0.01) {
+        capture();
+        return;
+      }
+      video.currentTime = target;
+    };
+
+    video.onseeked = () => capture();
     video.onerror = () => fail('Could not load video for thumbnail');
   });
+}
+
+/**
+ * Creates and uploads a video thumbnail. It never throws and never takes longer
+ * than 20 seconds: if anything goes wrong it returns undefined and the video is
+ * posted without a thumbnail.
+ */
+export async function createVideoThumbnail(params: {
+  file: File;
+  userId: string;
+  dataSaver: boolean;
+}): Promise<string | undefined> {
+  try {
+    return await withTimeout(
+      (async () => {
+        const thumbFile = await generateVideoThumbnail(params.file);
+        const { path } = await uploadImage({
+          file: thumbFile,
+          userId: params.userId,
+          bucket: 'post-images',
+          kind: 'post',
+          dataSaver: params.dataSaver,
+        });
+        return path;
+      })(),
+      THUMB_TOTAL_TIMEOUT_MS,
+      'Thumbnail took too long'
+    );
+  } catch (err) {
+    console.error('Thumbnail skipped', err);
+    return undefined;
+  }
 }
 
 export async function uploadMessageMedia(params: { file: File; userId: string; conversationId: string; dataSaver: boolean }) {
@@ -225,9 +318,4 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
   if (!path) return null;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
-}
-
-export async function deleteFile(bucket: Bucket, path: string) {
-  const { error } = await supabase.storage.from(bucket).remove([path]);
-  if (error) throw error;
-  }
+                   }
