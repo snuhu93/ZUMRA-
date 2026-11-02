@@ -7,7 +7,7 @@ import { createPost } from '@/services/posts';
 import {
   uploadImage,
   uploadVideo,
-  generateVideoThumbnail,
+  createVideoThumbnail,
   toFriendlyError,
   type VideoStatus
 } from '@/services/storage';
@@ -131,26 +131,15 @@ export default function CreatePost() {
           const { path } = await uploadImage({ file: m.file, userId: user.id, bucket: 'post-images', kind: 'post', dataSaver });
           uploaded.push({ path, type: 'image' });
         } else {
-          // Step 1: create the thumbnail first (from the original file, fast)
-          let thumbnailPath: string | undefined;
+          // Step 1: thumbnail. It never blocks the post: if it fails or takes
+          // too long (20 seconds max), the video is posted without it.
           step = 'Thumbnail';
           setProgress(`${prefix}${tr('creating_thumbnail', 'Creating thumbnail…')}`);
-          for (let attempt = 1; attempt <= 2 && !thumbnailPath; attempt++) {
-            try {
-              const thumbFile = await generateVideoThumbnail(m.file);
-              const { path: thumbPath } = await uploadImage({
-                file: thumbFile,
-                userId: user.id,
-                bucket: 'post-images',
-                kind: 'post',
-                dataSaver,
-              });
-              thumbnailPath = thumbPath;
-            } catch (e) {
-              // If thumbnail generation fails, we try once more, then continue without it
-              console.error(`Thumbnail failed (attempt ${attempt})`, e);
-            }
-          }
+          const thumbnailPath = await createVideoThumbnail({
+            file: m.file,
+            userId: user.id,
+            dataSaver,
+          });
 
           // Step 2: compress, then upload the video
           step = 'Video upload';
@@ -389,4 +378,4 @@ export default function CreatePost() {
       )}
     </div>
   );
-}
+                           }
