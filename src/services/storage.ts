@@ -318,4 +318,9 @@ export function getPublicUrl(bucket: Bucket, path: string | null): string | null
   if (!path) return null;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
-                   }
+}
+
+export async function deleteFile(bucket: Bucket, path: string) {
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) throw error;
+}
